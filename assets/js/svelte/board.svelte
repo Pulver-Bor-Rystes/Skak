@@ -18,8 +18,6 @@
 	}
 
 	/*
-
-	Jeg foreslår en måde at komprimere en briks data ned til det helt elementære!
 	
 	################################
 	#           Eksempel           #
