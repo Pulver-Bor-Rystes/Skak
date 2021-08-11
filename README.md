@@ -1,6 +1,6 @@
-# ChessSite
+# Skakk
 
-# OBS
+# Vigtigt!
 Brug NodeJS version 12
 
 #### Installér / Opdatér
