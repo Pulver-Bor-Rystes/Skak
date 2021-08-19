@@ -31,8 +31,8 @@ Installér Yarn: `npm i -g yarn`
     │   ├── env.json            # En environment fil til serveren
     │   ├── rollup.config.js    # Rollup konfigurationsfil. Bør ikke røres ved!
     │   ├── tsconfig.json       # Typescript konfigurationsfil. Bør heller ikke røres ved!
-    ├── dist                    # Her ligger den kompilerede server kode. Mappen skal bare have lov at ligge i fred.
-    ├── src                     # Her ligger den rå server kode!
+    ├── compiled_server                    # Her ligger den kompilerede server kode. Mappen skal bare have lov at ligge i fred.
+    ├── server                     # Her ligger den rå server kode!
     ├── web                     # Mappen som holder på alt frontend relateret
     │   ├── compiled_svelte     # Navnet forklarer det lidt... (er offentlig)
     │   ├── public              # Alt i denne mappe er offentligt via get requests
