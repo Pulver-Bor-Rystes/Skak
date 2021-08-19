@@ -1,18 +1,11 @@
-Typescript & Svelte - Boilerplate
+Skakk
 ============================
 
 ### Introduktion
-Jeg brød mig ikke så meget om Sapper, SvelteKit og andre lignende projekter, da de alle sammen føltes ret låst fast. 
-
-Derfor lavede jeg min egen boilerplate! Features er blandt andet:
-- live-reload
-- custom env fil
-- typescript og sass/scss!
 
 
 
 ### Yarn kommandoer
-Jeg er begyndt at bruge yarn, da det bare er lidt nemmere...
 
 Installér Yarn: `npm i -g yarn`
 
