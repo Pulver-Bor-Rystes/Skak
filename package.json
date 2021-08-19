@@ -24,9 +24,9 @@
   "scripts": {
     "start": "yarn tsc --project config/tsconfig.json; node compiled_server/main.js",
     "server": "yarn nodemon compiled_server/main.js --ignore 'web/*'",
-    "server_compiler": "yarn tsc -w --project config/tsconfig.json",
-    "svelte_compiler": "yarn rollup -c config/rollup.config.js -w",
-    "style_compiler": "yarn sass web/svelte/*.*ss web/compiled_public/style.css -w",
+    "server_compile": "yarn tsc -w --project config/tsconfig.json",
+    "svelte_compile": "yarn rollup -c config/rollup.config.js -w",
+    "style_compile": "yarn sass web/svelte/*.*ss web/compiled_public/style.css -w",
     "pretty": "yarn prettier --write server/ web/svelte --config config/.prettierrc.json",
     "compile_all": "node compile.js",
     "clean": "rm -rf compiled_server; rm -rf web/compiled_public"
