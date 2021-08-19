@@ -1,7 +1,19 @@
 Skakk
 ============================
 
-### Introduktion
+### config/env.json
+```json
+{
+    "port": 3000,
+    "enable_hotreload": true,
+    "meta": {
+        "title": "Skakk",
+        "description": "Beskrivelse",
+        "url": "skakk.dk",
+        "langauge": "dk"
+    }
+}
+```
 
 
 
