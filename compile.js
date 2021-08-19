@@ -1,7 +1,7 @@
 const { exec } = require("child_process");
 const { argv } = process 
 
-const commands = ['svelte_compile', 'server_compile', 'style_compile', 'server']
+const commands = ['svelte_compile', 'server_compile', 'style_compile']
 const all = (argv.length == 2)
 
 
