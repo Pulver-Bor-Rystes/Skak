@@ -23,12 +23,12 @@
   },
   "scripts": {
     "start": "yarn tsc --project config/tsconfig.json; node compiled_server/main.js",
-    "dev": "yarn nodemon compiled_server/main.js --ignore 'web/*'",
-    "server": "yarn tsc -w --project config/tsconfig.json",
-    "svelte": "yarn rollup -c config/rollup.config.js -w",
-    "style": "yarn sass web/svelte/*.*ss web/compiled_public/style.css -w",
+    "server": "yarn nodemon compiled_server/main.js --ignore 'web/*'",
+    "server_compiler": "yarn tsc -w --project config/tsconfig.json",
+    "svelte_compiler": "yarn rollup -c config/rollup.config.js -w",
+    "style_compiler": "yarn sass web/svelte/*.*ss web/compiled_public/style.css -w",
     "pretty": "yarn prettier --write server/ web/svelte --config config/.prettierrc.json",
-    "compile": "node compile.js",
+    "compile_all": "node compile.js",
     "clean": "rm -rf compiled_server; rm -rf web/compiled_public"
   },
   "author": "",
