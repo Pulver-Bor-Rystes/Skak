@@ -1,0 +1,6 @@
+node_modules/
+compiled_server/
+web/compiled_public/
+
+env.json
+.DS_Store
