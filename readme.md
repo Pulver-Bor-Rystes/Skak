@@ -1,54 +1,33 @@
 Skakk
 ============================
 
-### config/env.json
-```json
-{
-    "port": 3000,
-    "enable_hotreload": true,
-    "meta": {
-        "title": "Skakk",
-        "description": "Beskrivelse",
-        "url": "skakk.dk",
-        "langauge": "dk"
-    }
-}
-```
+### Kom godt i gang
 
-
-
-### Yarn kommandoer
-
-Installér Yarn: `npm i -g yarn`
-
-`yarn start` Kompilerer server koden, hvorefter den starter serveren.
-
-`yarn dev` Starter serveren med nodemon
-
-`yarn src` Kompilere server koden i `server/`
-
-`yarn svelte` Kompilere Svelte kode
-
-`yarn pretty` Formatere koden efter prettier's regler
-
-`yarn clean` Fjerner alle mapper, som indeholder kompileret kode: `dist & web/compiled_svelte`
-
+Du har brug for at installere:
+ - [NodeJS](https://nodejs.org) v12 eller v14, men ikke v16
+ - [MongoDB Community](https://www.mongodb.com/try/download/community) Så du kan køre databasen lokalt
+ - Eventuelt også [MongoDB Compass](https://www.mongodb.com/products/compass) så du kan observere databasen.
 
 
 ### Mappe struktur
 
     .
-    ├── config                  # Her ligger alle konfigurationsfilerne.
+    ├── compiled_server         # Her ligger den kompilerede server kode. Mappen skal bare have lov at ligge i fred.
+    ├── config
     │   ├── .prettierrc         # Regeler for hvordan filerne skal se ud.
-    │   ├── env.json            # En environment fil til serveren
-    │   ├── rollup.config.js    # Rollup konfigurationsfil. Bør ikke røres ved!
+    │   ├── env.json            # En environment fil til serveren, som bliver automatisk genereret
     │   ├── tsconfig.json       # Typescript konfigurationsfil. Bør heller ikke røres ved!
-    ├── compiled_server                    # Her ligger den kompilerede server kode. Mappen skal bare have lov at ligge i fred.
-    ├── server                     # Her ligger den rå server kode!
-    ├── web                     # Mappen som holder på alt frontend relateret
-    │   ├── compiled_svelte     # Navnet forklarer det lidt... (er offentlig)
-    │   ├── public              # Alt i denne mappe er offentligt via get requests
-    │   ├── svelte              # Rå Svelte kode med Typescript!
-    │   └── views               # Her ligger der html filer, som bliver pre-genereret!
+    │   ├── webpack.config.js   # Rollup konfigurationsfil. Bør ikke røres ved!
+    ├── server                  # Her ligger serveren og koger
+    ├── web                     # Mappen som holder på alt frontend relateret, kun mappen `compiled` er offentlig
+    │   ├── compiled            # Navnet forklarer det lidt... (er offentlig)
+    │   ├── css
+    │   ├── js
+    │   │   ├── svelte          # Alle svelte filer ligger her
+    │   │   ├── app.js          # Der sker egentlig ikke så meget her, men den fungerer som et indgangspunkt
+    │   │   ├── sveltegen.js    # Sørger for at man kan bruge forskellige svelte filer på hjemmesiden
+    │   ├── static              # En mappe til scripts som ikke skal integreres med resten af klientkoden.
+    │   └── views               # Her ligger de html filer som bruges til de forskellige sider :)
     └── compile.js              # Et script som kompilerer alt, som skal kompileres...
+    └── ideas.med               # Kan bruges til at notere idéer uden at de bliver smidt op på github
 

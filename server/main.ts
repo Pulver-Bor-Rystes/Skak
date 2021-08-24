@@ -1,7 +1,7 @@
-const { clear, log, table } = console
+console.clear()
 import { Socket } from 'socket.io'
 import { Request, Response, NextFunction } from 'express'
-import { init_server } from './_server_setup'
+import { init_server } from './setup/server_setup'
 
 const { app, io } = init_server()
 

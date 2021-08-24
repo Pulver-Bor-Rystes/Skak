@@ -4,7 +4,7 @@ import { Server } from 'socket.io'
 
 let _io: Server
 
-export function __hotreload_init__(io: Server, paths: string[]) {
+export function hotreload_init(io: Server, paths: string[]) {
 	_io = io
 	watch_for_changes(paths)
 }

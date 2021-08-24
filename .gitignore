@@ -1,6 +1,9 @@
 node_modules/
 compiled_server/
-web/compiled_public/
+web/compiled/
 
-env.json
 .DS_Store
+
+ideas.md
+config/env.json
+config/fakedb.json
