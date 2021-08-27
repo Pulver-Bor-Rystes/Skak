@@ -10,8 +10,8 @@ const files: any = {
         "meta": {
             "title": "Skakk",
             "description": "Beskrivelse",
-            "url": "skakk.dk",
-            "langauge": "dk",
+            "url": "localhost:3000",
+            "language": "dk",
         },
         "database": {
             "uri": "mongodb://localhost:27017",

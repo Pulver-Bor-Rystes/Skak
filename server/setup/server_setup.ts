@@ -1,4 +1,5 @@
 import express, { Application, Request, Response, NextFunction } from 'express'
+import cookieParser from 'cookie-parser'
 import { readFileSync } from 'fs'
 import { Server } from 'socket.io'
 import { hotreload_init } from './hotreload'
@@ -6,8 +7,14 @@ import { genereate_files } from './gen_files'
 
 // Database
 import { connect_to_db } from './database'
-import { info_router } from "../routes/example"
-import { users_router } from "../routes/users"
+import { info_router } from "../routes/example.router"
+import { auth_router } from "../routes/auth.router"
+import { testing_router } from "../routes/testing.router"
+
+// Interfaces / Types
+import { User } from '../../shared/types'
+
+
 
 genereate_files()
 
@@ -17,10 +24,7 @@ type init_return = {
 	io: Server
 }
 
-interface User {
-	username: string
-	id: string
-}
+
 
 
 interface Meta {
@@ -56,30 +60,35 @@ export function init_server(): init_return {
 			'web/compiled/images',
 		])
 
+	// Parsers
+	app.use(cookieParser());
+
 	// View engine
 	app.set('views', 'web/views')
 	app.set('view engine', 'ejs')
 
-	// Public
-	app.use('/', express.static('node_modules/socket.io/client-dist/'))
-	app.use('/', express.static('web/compiled'))
-
+	// Meta data til siderne
 	app.get('*', (req: Request, _res: Response, next: NextFunction) => {
 		req.meta = env.meta
 		next()
 	})
 
+	// Public
+	app.use('/', express.static('node_modules/socket.io/client-dist/'))
+	app.use('/', express.static('web/compiled'))
+
+
 
 	// Database
 	connect_to_db()
-		.then(() => {
-			app.use("/users", info_router);
-			app.use("/auth", users_router);
-		})
 		.catch((error: Error) => {
 			console.error("Database connection failed", error);
 			process.exit();
 		});
+
+	app.use("/users", info_router);
+	app.use("/auth", auth_router);
+	app.use("/testing", testing_router);
 
 
 	let stuff: init_return = {

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="<%= locals.language || 'en' %>">
+
+<head>
+    <%- include('default_header.ejs') %>
+</head>
+
+<!-- Kroppen bliver fyldt automatisk af bundle.js -->
+
+<body>
+
+    <div class="svelte-component" data-name="<%= locals.component || 'wrong_page' %>" data-props="<%= locals.props || '{}' %>"></div>
+
+</body>
+
+</html>

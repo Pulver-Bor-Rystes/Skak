@@ -1,20 +1,8 @@
-import { ObjectId } from "mongodb";
+import type { ObjectId } from "mongodb";
+import type { Sex, Server_Cookie, Rating } from "../../shared/types"
 
 
-interface Rating {
-    'blitz': number
-    'normal': number
-}
-
-interface Cookie {
-    'str': string,
-    'expiration_date': Date
-}
-
-type Sex = 'Male' | 'Female' | 'Other'
-
-
-export default class Game {
+export default class User {
     constructor(
         public username: string,
         public firstname: string,
@@ -24,7 +12,7 @@ export default class Game {
         public avatar_seed: string,
         public rating: Rating,
 
-        public cookies: Cookie[],
+        public cookies: Server_Cookie[],
         public password: string,
 
         public id?: ObjectId,

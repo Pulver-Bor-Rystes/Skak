@@ -1,5 +1,6 @@
 import * as crypto from 'crypto'
 
+import { Cookie } from '../../shared/types'
 
 const salt = 'aj29asdnsj1293jskdn192ASDN123#4238=!niwqe'
 const iterations = 10000
@@ -7,11 +8,6 @@ const keylen = 256
 const digest = 'sha512'
 
 
-export interface Cookie {
-    key: string // Den oprindelige nøgle. Nøglen skal udelukkende obevares på klienten
-    hashed_key: string // Den hashede nøgle
-    expiration_date: number
-}
 
 
 export const hash_str = (str: string) => {
