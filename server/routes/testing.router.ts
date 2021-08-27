@@ -20,12 +20,15 @@ const get_all_files = function (dirPath: string, arrayOfFiles?: string[]) {
 
 	arrayOfFiles = arrayOfFiles || []
 
+	// correct backslash
+	let cb = process.platform == 'win32' ? '\\':'/'
+
 	files.forEach(function (file) {
 		if (fs.statSync(dirPath + "/" + file).isDirectory()) {
 			arrayOfFiles = get_all_files(dirPath + "/" + file, arrayOfFiles)
 		} else {
 			if (file.includes('.svelte'))
-				arrayOfFiles?.push( (path.join(dirPath, "/", file)).split('/js/svelte/')[1] )
+				arrayOfFiles?.push( (path.join(dirPath, "/", file)).split(`${cb}js${cb}svelte${cb}`)[1] )
 		}
 	})
 

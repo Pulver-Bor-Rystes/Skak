@@ -11,7 +11,7 @@ Du har brug for at installere:
 
 ### Til Peter
 
-Fordi vi er overlegne mennesker og kører linux kan du nemt installere mongodb community med et par hurtige kommandoer
+Fordi vi er overmennesker og kører linux kan du nemt installere mongodb community med et par hurtige kommandoer
 
 `git clone https://aur.archlinux.org/mongodb-bin.git`
 `cd mongodb-bin`
