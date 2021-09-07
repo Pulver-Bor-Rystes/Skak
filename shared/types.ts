@@ -18,13 +18,15 @@ export interface Rating {
 export interface Cookie {
     key: string // Den oprindelige nøgle. Nøglen skal udelukkende obevares på klienten
     hashed_key: string // Den hashede nøgle
-    expiration_date: number
 }
 
 
 export interface Server_Cookie {
-    hashed_key: string,
-    expiration_date: number,
+    device_name: string
+    hashed_key: string
+    created: number // Så vi ved hvor gammel cookien er
+    lifetime: number // I timer
+    last_used: number // Det er den man skal tjekke efter
 }
 
 
@@ -32,20 +34,4 @@ export interface Server_Cookie {
 export interface Post_req_response {
     status: boolean
     errors?: string[]
-}
-
-
-
-export interface User {
-	username: string
-    firstname: string
-    lastname: string
-    sex: Sex
-    
-    avatar_seed: string
-    rating: Rating
-
-    cookies: Cookie[]
-    password: string
-	id?: ObjectId
 }

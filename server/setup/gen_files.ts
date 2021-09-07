@@ -1,5 +1,5 @@
 // Live reload
-import { accessSync, constants, writeFileSync } from 'fs'
+import { accessSync, writeFileSync } from 'fs'
 
 
 const files: any = {

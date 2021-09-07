@@ -1,12 +1,12 @@
 import * as crypto from 'crypto'
-
 import { Cookie } from '../../shared/types'
 
+
+// TODO: Saltet skal gemmes et andet sted
 const salt = 'aj29asdnsj1293jskdn192ASDN123#4238=!niwqe'
 const iterations = 10000
 const keylen = 256
 const digest = 'sha512'
-
 
 
 
@@ -16,8 +16,8 @@ export const hash_str = (str: string) => {
 
 
 export const verify_hash = (str: string, hash: string) => {
-    let newHash: string = crypto.pbkdf2Sync(str, salt, iterations, keylen, digest).toString('base64')
-    return hash === newHash
+    let new_hash: string = crypto.pbkdf2Sync(str, salt, iterations, keylen, digest).toString('base64')
+    return hash === new_hash
 }
 
 
@@ -32,18 +32,11 @@ export const random_str = (length: number) => {
 }
 
 
-export const gen_cookie = (hours: number = 1) => {
+export const gen_cookie = () => {
     const key: string = random_str(256)
     const hashed_key: string = hash_str(key)
 
-    // cookieen udløber efter x timer
-    const expiration_date: number = hours * 3600000 + Date.now()
-
-    const cookie: Cookie = {
-        key,
-        hashed_key,
-        expiration_date
-    }
+    const cookie: Cookie = { key, hashed_key }
 
     return cookie
 }

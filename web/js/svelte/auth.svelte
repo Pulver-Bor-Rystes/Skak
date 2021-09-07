@@ -3,6 +3,7 @@
     import type { Sex } from "../../../shared/types"
 
     let username = 'musmus9';
+    let _username;
     let firstname = 'Rasmus';
     let lastname = 'Foldberg';
 
@@ -10,6 +11,7 @@
     let sex: Sex = 'Male';
 
     let password = '123';
+    let _password;
 
 
 
@@ -36,10 +38,29 @@
 
         let resp = await post_request('/auth/signup', details)
 
+        console.log(resp)
+
+
         if (resp.status) {
             // Yay!
         }
+        else {
+            // Nay :(
+            console.log(resp?.errors)
+        }
     };
+
+    const on_login = async () => {
+        let resp = await post_request('/auth/login', {
+            'username': _username,
+            'password': _password,
+        })
+
+        if (resp.status)
+            console.log('Logged in!')
+        else
+            console.log(resp?.errors)
+    }
 
     
 </script>
@@ -63,6 +84,16 @@
         <input bind:value={password} type="password" placeholder="Kodeord" />
 
         <button on:click={on_signup}> Opret </button>
+    </div>
+
+    <div class="signup">
+        <h1>Log ind</h1>
+
+        <!-- Kodeord -->
+        <input bind:value={_username} type="username" placeholder="Brugernavn" />
+        <input bind:value={_password} type="password" placeholder="Kodeord" />
+
+        <button on:click={on_login}> Log ind </button>
     </div>
 </div>
 

@@ -8,12 +8,11 @@ import { genereate_files } from './gen_files'
 // Database
 import { connect_to_db } from './database'
 import { info_router } from "../routes/example.router"
-import { auth_router } from "../routes/auth.router"
+import { auth_router, background_auth_router } from "../routes/auth.router"
 import { testing_router } from "../routes/testing.router"
 
 // Interfaces / Types
-import { User } from '../../shared/types'
-
+import User from '../models/user.model'
 
 
 genereate_files()
@@ -27,7 +26,7 @@ type init_return = {
 
 
 
-interface Meta {
+export interface Meta {
 	url: string
 	title: string
 	description: string
@@ -40,6 +39,8 @@ declare module 'express' {
 		user?: User,
 	}
 }
+
+
 
 export function init_server(): init_return {
 	const env = JSON.parse(
@@ -66,6 +67,11 @@ export function init_server(): init_return {
 	// View engine
 	app.set('views', 'web/views')
 	app.set('view engine', 'ejs')
+
+
+
+	// Background authentication
+	app.use(background_auth_router)
 
 	// Meta data til siderne
 	app.get('*', (req: Request, _res: Response, next: NextFunction) => {
