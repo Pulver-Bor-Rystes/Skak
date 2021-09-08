@@ -38,8 +38,13 @@ background_auth_router.use('*', async (req: Request, res: Response, next: NextFu
             const og_cookie = req.cookies?.cookie || ''
             const valid_cookie = verify_hash( og_cookie, cookie.hashed_key )
 
-            if (valid_cookie) {
+            // Cookie skal være ung nok
+            const date_max = cookie.last_used + cookie.lifetime * 3600_000
+            const young_enough = Date.now() < date_max
+
+            if (valid_cookie && young_enough) {
                 req.user = user
+                cookie.last_used = Date.now()
             }
         })
     }
