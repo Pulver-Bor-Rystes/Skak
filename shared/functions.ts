@@ -1,4 +1,4 @@
-import { Cookie, Rating, Server_Cookie } from "./types";
+import { Cookie, Rating, Server_Cookie, Settings } from "./types";
 
 
 export const convert_to_server_cookie = (cookie: Cookie, lifetime=48) => {
@@ -13,12 +13,19 @@ export const convert_to_server_cookie = (cookie: Cookie, lifetime=48) => {
     return sc
 }
 
+export const default_settings = () => {
+    let settings: Settings = {
+        'max_active_cookies': 5
+    }
 
+    return settings
+}
 
 export const default_rating = () => {
     let rating: Rating = {
+        'bullet': 800,
         'blitz': 800,
-        'normal': 800,
+        'rapid': 800,
     }
 
     return rating

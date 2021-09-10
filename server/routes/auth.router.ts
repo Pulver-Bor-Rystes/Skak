@@ -5,7 +5,7 @@ import User from "../models/user.model"
 
 import { gen_cookie, hash_str, verify_hash } from "../setup/crypto"
 import { Cookie, Post_req_response, Rating, Server_Cookie, Sex } from '../../shared/types'
-import { convert_to_server_cookie, default_rating } from "../../shared/functions"
+import { convert_to_server_cookie, default_rating, default_settings } from "../../shared/functions"
 
 
 
@@ -61,6 +61,7 @@ auth_router.post('/login', async (req: Request, res: Response) => {
 
     // Usikker
     const unsafe_payload: { 'username': string, 'password': string } = req.body
+    unsafe_payload.username = unsafe_payload?.username.toLowerCase()
 
     // Finder brugeren som prøver at logge ind.
     const user = (await collections.users?.findOne({ username: unsafe_payload?.username })) as User
@@ -95,14 +96,6 @@ auth_router.post('/login', async (req: Request, res: Response) => {
                 })
             }
 
-            // Tjek settings
-            const u_keys = Object.keys(user)
-            if (!u_keys.includes('settings')) {
-                user.settings = {
-                    'max_active_cookies': 5
-                }
-            }
-
             // Indsætter i databasen
             const db_manipulation = await collections.users?.updateOne(
                 { username: unsafe_payload?.username }, 
@@ -131,6 +124,7 @@ auth_router.post('/login', async (req: Request, res: Response) => {
 
 auth_router.post('/signup', async (req: Request, res: Response) => {
     const unsafe_payload: User = req.body
+    unsafe_payload.username = unsafe_payload?.username.toLowerCase()
 
 
     let resp: Post_req_response = {
@@ -192,6 +186,7 @@ auth_router.post('/signup', async (req: Request, res: Response) => {
 
         unsafe_payload.cookies = [ convert_to_server_cookie(cookie) ]
         unsafe_payload.rating = default_rating()
+        unsafe_payload.settings = default_settings()
 
         unsafe_payload.password = hash_str(unsafe_payload?.password)
 

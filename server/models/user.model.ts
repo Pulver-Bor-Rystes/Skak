@@ -1,9 +1,6 @@
 import type { ObjectId } from "mongodb";
-import type { Sex, Server_Cookie, Rating } from "../../shared/types"
+import type { Sex, Server_Cookie, Rating, Settings } from "../../shared/types"
 
-interface Settings {
-    max_active_cookies: 5,
-}
 
 export default class User {
     constructor(

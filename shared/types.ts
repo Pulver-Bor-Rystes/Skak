@@ -10,8 +10,14 @@ export type Sex = 'Male' | 'Female' | 'Other'
 // Interfaces
 
 export interface Rating {
+    'bullet': number
     'blitz': number
-    'normal': number
+    'rapid': number
+}
+
+
+export interface Settings {
+    max_active_cookies: 5,
 }
 
 
