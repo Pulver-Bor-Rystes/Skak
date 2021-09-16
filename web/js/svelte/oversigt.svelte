@@ -20,7 +20,7 @@
 				<br>
 				<br>
 				<span class="link">		
-					<a href="/test/{String(file).replace(/\//g, '>')}"> {file} </a>
+					<a href="/test/{String(file).replace(/\\/g, "/").replace(/\//g, '>')}"> { String(file).replace(/\\/g, "/") } </a>
 				</span>
 			{/each}
 		{:catch error}
