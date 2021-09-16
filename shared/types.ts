@@ -17,7 +17,11 @@ export interface Rating {
 
 
 export interface Settings {
-    max_active_cookies: 5,
+    max_active_cookies: number
+    theme: {
+        board: string
+        piece: string
+    }
 }
 
 

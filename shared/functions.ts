@@ -15,7 +15,11 @@ export const convert_to_server_cookie = (cookie: Cookie, lifetime=48) => {
 
 export const default_settings = () => {
     let settings: Settings = {
-        'max_active_cookies': 5
+        'max_active_cookies': 5,
+        'theme': {
+            'board': 'traditional',
+            'piece': 'neo_wood',
+        }
     }
 
     return settings

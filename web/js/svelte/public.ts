@@ -1,6 +1,11 @@
 import { writable } from 'svelte/store';
 
 
+let logged_in_elem = document.getElementById('logged_in')
+export let logged_in = writable(logged_in_elem.getAttribute('data-value'))
+logged_in_elem.remove()
+
+
 export async function post_request(url: string, data?: Object) {
     // Default options are marked with *
     const response = await fetch(url, {

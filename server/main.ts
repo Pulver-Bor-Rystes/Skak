@@ -19,7 +19,7 @@ app.get('/', (req: Request, res: Response) => {
 
 
 app.get('/test/:component', (req: Request, res: Response) => {
-	let parameters = { 'component': req.params.component.replace(/>/g, '/') }
+	let parameters = { 'logged_in': Boolean(req?.user), 'component': req.params.component.replace(/>/g, '/') }
 	Object.assign(parameters, req.meta)
 
 	res.render('test_components', parameters)

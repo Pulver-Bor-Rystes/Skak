@@ -21,7 +21,8 @@
     "experimentalDecorators": true,
     "resolveJsonModule": true,
     "baseUrl": "../",
+    "typeRoots": ["../node_modules/@types"]
   },
-  "exclude": ["node_modules/**/*", "shared/**/*"],
-  "include": ["../server/**/*.tsx", "../server/**/*.ts"]
+  "exclude": ["../node_modules/**/*", "../shared/functions.ts", "../shared/types.ts"],
+  "include": ["../server/**/*.tsx", "../server/**/*.ts"],
 }
