@@ -10,9 +10,11 @@ import { connect_to_db } from './database'
 import { info_router } from "../routes/example.router"
 import { auth_router, background_auth_router } from "../routes/auth.router"
 import { testing_router } from "../routes/testing.router"
+import { user_info } from '../routes/user_info.router'
 
 // Interfaces / Types
 import User from '../models/user.model'
+import { users_router } from '../routes/users.router'
 
 
 genereate_files()
@@ -95,6 +97,8 @@ export function init_server(): init_return {
 	app.use("/users", info_router);
 	app.use("/auth", auth_router);
 	app.use("/testing", testing_router);
+	app.use("/api/me", user_info);
+	app.use("/api/users", users_router);
 
 
 	let stuff: init_return = {

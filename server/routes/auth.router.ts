@@ -135,9 +135,12 @@ auth_router.post('/signup', async (req: Request, res: Response) => {
     try {
         let list_of_errs: string[] = []
 
+        // TODO: Omskriv dette stykke, så det gør brug af funktionen
+        // TODO: check_against_pattern. Bare så det ser mere nydeligt ud :)
+
         const apply_patterns = [
             {
-                "pattern": "^(?=[a-øA-Ø0-9._]{5,20}$)(?!.*[_.]{2})[^_.].*[^_.]$",
+                "pattern": "^(?=[a-øA-Ø0-9._]{3,20}$)(?!.*[_.]{2})[^_.].*[^_.]$",
                 "apply_to": ['username', 'firstname', 'lastname']
             },
             {

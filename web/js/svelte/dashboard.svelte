@@ -1,4 +1,8 @@
 <script type="ts">
+    import { post_request } from './public'
+
+    const firstname_promise = post_request("/api/me/name");
+    
     /* Farver
 
         BG GRÅ: #383941
@@ -10,15 +14,30 @@
 <main>
     <div />
     <div class="bg">
-        <h1>Godaften, Peter ;)</h1>
+        {#await firstname_promise}
+            <h1> Godaften, ... </h1>
+        {:then firstname } 
+            <h1> Godaften, {firstname} ;) </h1>
+        {:catch err}
+            <h1> Du er ikke logget ind </h1>
+        {/await}
+
+
 
         <div class="content">
             <div class="third_split">
-                <div id="main" class="section" />
-                <div id="stats" class="section" />
+                <div id="main" class="section">
+                    main
+                </div>
+
+                <div id="stats" class="section">
+                    stats
+                </div>
             </div>
 
-            <div id="live" class="section" />
+            <div id="live" class="section">
+                live
+            </div>
         </div>
     </div>
 </main>
