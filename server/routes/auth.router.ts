@@ -5,7 +5,7 @@ import User from "../models/user.model"
 
 import { gen_cookie, hash_str, verify_hash } from "../setup/crypto"
 import { Cookie, Post_req_response, Rating, Server_Cookie, Sex } from '../../shared/types'
-import { convert_to_server_cookie, default_rating, default_settings } from "../../shared/functions"
+import { convert_to_server_cookie, default_rating, default_settings } from "../../shared/functions/default_values"
 
 
 
@@ -187,9 +187,13 @@ auth_router.post('/signup', async (req: Request, res: Response) => {
         // Gem til database og fortæl klient
         let cookie: Cookie = gen_cookie()
 
+        // Tilføjelse af andre elementer
         unsafe_payload.cookies = [ convert_to_server_cookie(cookie) ]
         unsafe_payload.rating = default_rating()
         unsafe_payload.settings = default_settings()
+        unsafe_payload.friends = []
+        unsafe_payload.friend_requests = []
+        unsafe_payload.blocked = []
 
         unsafe_payload.password = hash_str(unsafe_payload?.password)
 
