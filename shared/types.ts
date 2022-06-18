@@ -1,6 +1,3 @@
-import { ObjectId } from "mongodb";
-
-
 // Types
 
 export type Sex = 'Male' | 'Female' | 'Other'
