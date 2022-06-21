@@ -3,14 +3,13 @@ import { accessSync, writeFileSync } from 'fs'
 
 
 const files: any = {
-    'ideas.md': '# Notér dine idéer her!\n\n',
     'config/env.json': {
-        "port": 3000,
+        "port": 4000,
         "enable_hotreload": true,
         "meta": {
             "title": "Skakk",
             "description": "Beskrivelse",
-            "url": "localhost:3000",
+            "url": "localhost:4000",
             "language": "dk",
         },
         "database": {

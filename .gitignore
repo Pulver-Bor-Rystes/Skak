@@ -1,9 +1,6 @@
-node_modules/
-compiled_server/
-web/compiled/
+**/*node_modules/
 
 .DS_Store
 
 ideas.md
-config/env.json
-config/fakedb.json
+**/*/config/

@@ -10,18 +10,17 @@ const digest = 'sha512'
 
 
 
-export const hash_str = (str: string) => {
-    return crypto.pbkdf2Sync(str, salt, iterations, keylen, digest).toString('base64')
+export function hash_str(str: string) {
+    return crypto.pbkdf2Sync(str, salt, iterations, keylen, digest).toString('base64');
 }
 
-
-export const verify_hash = (str: string, hash: string) => {
+export function verify_hash(str: string, hash: string) {
     let new_hash: string = crypto.pbkdf2Sync(str, salt, iterations, keylen, digest).toString('base64')
     return hash === new_hash
 }
 
 
-export const random_str = (length: number) => {
+export function random_str(length: number) {
     var result = ''
     var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     var charactersLength = characters.length
@@ -32,7 +31,7 @@ export const random_str = (length: number) => {
 }
 
 
-export const gen_cookie = () => {
+export function gen_cookie() {
     const key: string = random_str(256)
     const hashed_key: string = hash_str(key)
 
