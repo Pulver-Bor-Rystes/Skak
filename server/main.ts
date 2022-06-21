@@ -31,7 +31,7 @@ const games: Game[] = [];
 
 
 // make a function that updates the clients lobby
-function update_lobby(medium: any) {
+function update_lobby_on_clients(medium: any) {
 	// send the lobby to the client without the invited_by_players
 	medium.emit('update_lobby', lobby.map(player => ({
 		username: player.username,
@@ -62,34 +62,41 @@ io.on('connection', (socket: Socket) => {
 		
 		// handle disconnect
 		socket.on('disconnect', () => {
-			// remove username from lobby
-			lobby.splice(lobby.findIndex(player => player.username === username), 1);
+			// if player is in lobby
+			if (lobby.find(player => player.socket_id === sid)) {
+				
+				// remove username from lobby
+				lobby.splice(lobby.findIndex(player => player.username === username), 1);
+				
+				update_lobby_on_clients(io)
+			}
 
-			// remove potential game
-			games.splice(games.findIndex(game => game.white === username || game.black === username), 1);
-
-			update_lobby(io)
+			// if player is in game
+			// remove game
+			if (games.find(game => game.socket_ids.includes(sid))) {
+				games.splice(games.findIndex(game => game.socket_ids.includes(sid)), 1);
+			}
 		});
 		
 		
-		// handle join event for socket
+		// handle join lobby event for socket
 		socket.on('join', () => {
 			// cant join if not logged in
 			if (username === "") {
-				socket.emit('join_failure');
+				socket.emit('join_failure', "You are not logged in");
 				return;
 			}
 	
 			// cant join if already in lobby
 			if (lobby.find(player => player.username === username)) {
-				update_lobby(socket)
-				socket.emit('join_failure');
+				update_lobby_on_clients(socket)
+				socket.emit('join_failure', "You are already in the lobby");
 				return;
 			}
 
 			// cant join if already in a game
 			if (games.find(game => game.white === username || game.black === username)) {
-				socket.emit('join_failure');
+				socket.emit('join_failure', "You are already in a game");
 				return;
 			}
 			
@@ -97,7 +104,7 @@ io.on('connection', (socket: Socket) => {
 			lobby.push({ username, socket_id: sid, invited_by_players: [] });
 
 
-			update_lobby(io)
+			update_lobby_on_clients(io)
 
 
 			socket.on("invite", (invitee: string) => {
@@ -105,9 +112,10 @@ io.on('connection', (socket: Socket) => {
 				const invitee_sid = lobby.find(player => player.username === invitee)?.socket_id;
 				if (invitee_sid) {
 					// if invitee has already invited you, accept the invite
-					if (lobby.find(player => player.username === invitee)?.invited_by_players.includes(username)) {
+					if (lobby.find(player => player.username === username)?.invited_by_players.includes(invitee)) {
 						io.to(invitee_sid).emit('invite_accepted', username);
 						socket.emit('invite_accepted', invitee);
+
 
 						setTimeout(async () => {
 							// make new game with an unique id
@@ -132,6 +140,17 @@ io.on('connection', (socket: Socket) => {
 						// remove both the invitee and the inviter from the lobby
 						lobby.splice(lobby.findIndex(player => player.username === invitee), 1);
 						lobby.splice(lobby.findIndex(player => player.username === username), 1);
+
+						// uninvite all players that the two players have invited
+						lobby.forEach(player => {
+							// remove potential invite from player
+							if (player.invited_by_players.includes(invitee)) {
+								player.invited_by_players.splice(player.invited_by_players.findIndex(inviter => inviter === invitee), 1);
+							}
+							if (player.invited_by_players.includes(username)) {
+								player.invited_by_players.splice(player.invited_by_players.findIndex(inviter => inviter === username), 1);
+							}
+						});
 					}
 					else {	
 						// send invite to invitee
@@ -142,6 +161,8 @@ io.on('connection', (socket: Socket) => {
 						}
 					}
 				}
+
+				update_lobby_on_clients(io);
 			})
 
 			socket.on("move", (move: string) => {
@@ -153,26 +174,25 @@ io.on('connection', (socket: Socket) => {
 
 					if (sid == game.socket_ids[Number(game.turn)]) {
 						// if it is the turn of the player, make the move
-						valid_move = true;
+						valid_move = true; // TODO: Er det et gyldigt træk
 					}
 
 					if (valid_move) {
 						game.turn = !game.turn;
-						console.log("move made", move)
 						// send move to both players
 						io.to(game.socket_ids[0]).emit('move_made', game.socket_ids[0] == sid ? "opponent_move" : move);
 						io.to(game.socket_ids[1]).emit('move_made', game.socket_ids[1] == sid ? "opponent_move" : move);
 					}
 					else {
 						// tell player that move was invalid
-						socket.emit('move_invalid');
+						socket.emit('move_invalid', game.pgn);
 					}
 				}
 			
 			})
 
 			socket.on("get_lobby", () => {
-				update_lobby(socket)
+				update_lobby_on_clients(socket)
 			})
 		})
 	})

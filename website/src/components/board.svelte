@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Chess } from 'chess.js'
+    import { Chess, type Square } from 'chess.js'
     import { get_socket } from "../stores/networking";
     import { onMount } from "svelte";
 	import { user_data } from '../stores/state';
@@ -31,13 +31,14 @@
             })
             .on("move_made", (move: string) => {
                 board.move(move);
-                update_board_state();
+				update_board_state();
             })
-            .on("move_invalid", () => {
-                alert("ugyldigt træk");
-            })
-
-
+            .on("move_invalid", (pgn: string) => {
+				board.load_pgn(pgn)
+				update_board_state();
+            });
+			
+			
 
     })
 
@@ -66,7 +67,7 @@
 	function get_src(square: string) {
 		if (!board) return ""
 
-		let piece = board.get(square)
+		let piece = board.get(square as Square)
 		if (piece) {
 			return `${link}${piece.color}${piece.type}.png`
 		}
@@ -81,19 +82,31 @@
 				new_move = move
 
 		if (new_move) {
-			board.move(new_move)
-            // send move to server
-            socket.emit("move", new_move)
-            current_square = ""
+			// if it is my turn to play
+			if ((board.turn() == "w" && game.white == $user_data.username) || board.turn() == "b" && game.black == $user_data.username) {
+				board.move(new_move) 
+				// send move to server
+				socket.emit("move", new_move)
+				current_square = ""
+			}
 		}
 		else {
-			if (board.get(square)) {
+			if (board.get(square as Square)) {
 				current_square = square
 			}
 			else {
 				current_square = ""
 			}
 		}
+	}
+
+
+
+	/** VSCode brokker sig gevaldigt når man prøver at bruge en string i stedet for typen Square
+	 * og da man ikke kan angive typer i svelte's konstante værdier er det her desværre løsningen...
+	*/
+	function wrapper_board_get(square: string) {
+		return board.get(square as Square)
 	}
 
 
@@ -111,7 +124,7 @@
                 
                 <p hidden>{square}</p>
                 <div on:click={() => move_piece(square)} id="{square}" class={ (x_tile + y_tile ) == 1 ? "black":"white" }>
-                    {#if board.get(square)}
+                    {#if wrapper_board_get(square)}
                         <img 
                             class="obj"
                             src={get_src( square )}

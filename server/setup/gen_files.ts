@@ -14,7 +14,6 @@ const files: any = {
         },
         "database": {
             "uri": "mongodb://localhost:27017",
-            "password": "",
             "name": "skakk",
             "collections": ["users"],
         }

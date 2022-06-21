@@ -93,14 +93,17 @@ export function init_server(): init_return {
 	// app.use('/', express.static('web/compiled'))
 
 
-	
+	process.stdout.write("Forbinder til database...")
 
 
 	// Database
 	connect_to_db()
 		.catch((error: Error) => {
-			console.error("Database connection failed", error);
+			process.stdout.write("❌\n")
 			process.exit();
+		})
+		.then(() => {
+			process.stdout.write("✅\n")
 		});
 
 

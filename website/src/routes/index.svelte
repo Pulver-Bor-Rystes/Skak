@@ -18,6 +18,8 @@
     onMount(() => {
         socket = get_socket()            
         
+
+        socket.on("join_failure", (reason: string) => console.log(reason))
         
         
         socket.on("update_lobby", (players: PlayerData[]) => {
