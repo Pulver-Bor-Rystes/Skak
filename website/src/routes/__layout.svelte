@@ -32,11 +32,13 @@
                 console.log("login success");
                 $user_data.logged_in = true;
                 $user_data.username = username as string;
+                localStorage.setItem("username", username as string);
             })
             .on("login_failure", () => {
                 console.log("login failure");
+                $user_data.login_failed = true;
                 if (!window.location.href.includes("/auth")) {
-                    window.location.href = "/auth"
+                    // window.location.href = "/auth"
                 }
             })
     });

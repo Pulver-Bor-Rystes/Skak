@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Auth from "../components/index/auth.svelte"
     import Board from "../components/board.svelte";
     import { onMount } from "svelte";
     import { get_socket } from "../stores/networking";
@@ -40,6 +41,14 @@
             lobby = [];
         })
     })
+
+
+
+    $: {
+        if ($user_data.login_failed && $user_data.logged_in) {
+            
+        }
+    }
     
     
     
@@ -92,3 +101,8 @@
         <Board game_id={"1"}/>
     </div>
 {/if}
+
+
+
+
+<Auth/>
