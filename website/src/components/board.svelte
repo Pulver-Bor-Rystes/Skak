@@ -24,7 +24,9 @@
         
         socket
             .on("game_created", (new_game_state: any) => {
-                game = new_game_state;
+				game = new_game_state;
+                board.load_pgn(new_game_state.pgn);
+				update_board_state();
 				if (game.black == $user_data.username) {
 					switch_direction()
 				}
@@ -37,9 +39,11 @@
 				board.load_pgn(pgn)
 				update_board_state();
             });
-			
-			
 
+
+
+		// henter opdatering automatisk		
+		socket.emit("get_game_state", game_id);
     })
 
 
@@ -83,10 +87,13 @@
 
 		if (new_move) {
 			// if it is my turn to play
-			if ((board.turn() == "w" && game.white == $user_data.username) || board.turn() == "b" && game.black == $user_data.username) {
+			if ((board.turn() == "w" && game?.white == $user_data.username) || board.turn() == "b" && game?.black == $user_data.username) {
 				board.move(new_move) 
 				// send move to server
-				socket.emit("move", new_move)
+				socket.emit("move", {
+					"new_move": new_move,
+					"pgn": board.pgn()
+				})
 				current_square = ""
 			}
 		}

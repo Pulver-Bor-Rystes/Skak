@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from 'express'
 import { init_server } from './setup/server_setup'
 import { authenticate } from './routes/v1/auth.router'
 import User from './models/user.model'
+import { friends } from './socket/friends'
 
 
 
@@ -17,7 +18,7 @@ type PlayerData = {
 }
 const lobby: PlayerData[] = [];
 
-type Game = {
+export type Game = {
 	id: string
 	white: string
 	black: string
@@ -53,6 +54,65 @@ io.on('connection', (socket: Socket) => {
 		if (resp) {
 			socket.emit('login_success');
 			username = (user as User).username;
+
+			// burde gerne opdaterer sid i spillet
+			for (const game of games) {
+				let found = false;
+				if (game.white == username) {
+					game.socket_ids[0] = sid;
+					found = true;
+				}
+
+				if (game.black == username) {
+					game.socket_ids[1] = sid;
+					found = true;
+				}
+
+				if (found) {
+					socket.emit("current_game", game.id);
+
+					break;
+				}
+			}
+
+			friends(socket, io);
+
+			socket.on("move", ({new_move, pgn}) => {
+				// get game with the same id as the socket id
+				const game = games.find(game => game.socket_ids.includes(sid));
+				if (game) {
+					// make move on board
+					let valid_move = false // TODO: check if move is valid
+
+					if (sid == game.socket_ids[Number(game.turn)]) {
+						// if it is the turn of the player, make the move
+						valid_move = true; // TODO: Er det et gyldigt træk
+					}
+
+					if (valid_move) {
+						game.turn = !game.turn;
+						game.pgn = pgn;
+						// send move to both players
+						io.to(game.socket_ids[0]).emit('move_made', game.socket_ids[0] == sid ? "opponent_move" : new_move);
+						io.to(game.socket_ids[1]).emit('move_made', game.socket_ids[1] == sid ? "opponent_move" : new_move);
+					}
+					else {
+						// tell player that move was invalid
+						socket.emit('move_invalid', game.pgn);
+					}
+				}
+			
+			})
+
+			socket.on("get_game_state", (game_id: string) => {
+				const game = games.find(game => game.id == game_id);
+				console.log(game)
+				if (!game) {
+					return;
+				}
+
+				socket.emit("game_created", game);
+			})
 		}
 		else {
 			socket.emit('login_failure');
@@ -73,9 +133,20 @@ io.on('connection', (socket: Socket) => {
 
 			// if player is in game
 			// remove game
-			if (games.find(game => game.socket_ids.includes(sid))) {
-				games.splice(games.findIndex(game => game.socket_ids.includes(sid)), 1);
-			}
+
+			setTimeout(() => {
+				// check if user has been active
+				// finder spilleren, og tjekker om sid er ens
+				// hvis ja, så har brugeren ikke været aktiv = slet spil
+				// hvis nej, gør ingenting
+				let active_game = games.find(game => game.socket_ids.includes(sid));
+				
+				// remove from game
+				if (active_game) {
+					console.log("removed active game")
+					games.splice(games.findIndex(game => game.socket_ids.includes(sid)), 1);
+				}
+			}, 100 * 60 * 2)
 		});
 		
 		
@@ -163,32 +234,6 @@ io.on('connection', (socket: Socket) => {
 				}
 
 				update_lobby_on_clients(io);
-			})
-
-			socket.on("move", (move: string) => {
-				// get game with the same id as the socket id
-				const game = games.find(game => game.socket_ids.includes(sid));
-				if (game) {
-					// make move on board
-					let valid_move = false // TODO: check if move is valid
-
-					if (sid == game.socket_ids[Number(game.turn)]) {
-						// if it is the turn of the player, make the move
-						valid_move = true; // TODO: Er det et gyldigt træk
-					}
-
-					if (valid_move) {
-						game.turn = !game.turn;
-						// send move to both players
-						io.to(game.socket_ids[0]).emit('move_made', game.socket_ids[0] == sid ? "opponent_move" : move);
-						io.to(game.socket_ids[1]).emit('move_made', game.socket_ids[1] == sid ? "opponent_move" : move);
-					}
-					else {
-						// tell player that move was invalid
-						socket.emit('move_invalid', game.pgn);
-					}
-				}
-			
 			})
 
 			socket.on("get_lobby", () => {

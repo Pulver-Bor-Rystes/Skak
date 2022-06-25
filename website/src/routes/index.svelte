@@ -15,6 +15,8 @@
     let has_joined = false;
     
     let in_progress = false;
+
+    let current_game_id: string;
     
     onMount(() => {
         socket = get_socket()            
@@ -40,6 +42,15 @@
             has_joined = false;
             lobby = [];
         })
+
+
+        socket.emit("get_current_game");
+        socket.on("current_game", (game_id: string) => {
+            console.log("setting current game:", game_id)
+            current_game_id = game_id;
+            in_progress = true;
+        })
+        
     })
 
 
@@ -98,7 +109,7 @@
 
 {#if in_progress}
     <div class="m-1 p-1">
-        <Board game_id={"1"}/>
+        <Board game_id={current_game_id}/>
     </div>
 {/if}
 
