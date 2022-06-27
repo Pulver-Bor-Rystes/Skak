@@ -48,8 +48,11 @@ io.on('connection', (socket: Socket) => {
 
 	
 	// handle login event
-	socket.on('login', async (username: string, temporary_cookie: string) => {
-		let [resp, user] = await authenticate(username, temporary_cookie);
+	socket.on('login', async (login_username: string, temporary_cookie: string) => {
+		let [resp, user] = await authenticate(login_username, temporary_cookie);
+
+
+		console.log(resp, user)
 		
 		if (resp) {
 			socket.emit('login_success');

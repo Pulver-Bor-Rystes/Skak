@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fly } from "svelte/transition"
-    import { npost } from "../../stores/networking";
+    import { login, npost } from "../../stores/networking";
     import { user_data } from "../../stores/state";
 
     // bindings
@@ -44,7 +44,7 @@
 
 
 
-    async function login(event: any) {
+    async function login_click(event: any) {
         // Returnere hvis tasten ikke er enter
         if ("key" in event) {
             if (event.key != "Enter") {
@@ -59,10 +59,17 @@
         });
 
         if (resp.status) {
-            $user_data.logged_in = true;
-            $user_data.login_failed = false;
-            $user_data.username = bind_username.value;
-            localStorage.setItem("username", bind_username.value);
+            login( (resp: Boolean) => {
+                console.log("loggin in")
+                if (resp) {
+                    $user_data.logged_in = true;
+                    $user_data.login_failed = false;
+                    $user_data.username = localStorage.getItem("username") as string;
+                }
+                else {
+                    $user_data.login_failed = true;
+                }   
+            })
         }
         else {
             console.log(resp?.errors);
@@ -71,7 +78,7 @@
 </script>
 
 {#if $user_data.login_failed}
-    <div transition:fly={{ y: -200, duration: 500 }} on:keypress={login} class="fixed flex justify-center w-full h-full top-0 backdrop-blur">
+    <div transition:fly={{ y: -200, duration: 500 }} on:keypress={login_click} class="fixed flex justify-center w-full h-full top-0 backdrop-blur">
         <div class="w-full max-w-xs self-center">
             <form class="bg-white dark:bg-zinc-900 shadow-md rounded px-8 pt-6 pb-8 mb-4">
                 <div class="mb-4">
@@ -113,7 +120,7 @@
                     <button
                         class="bg-blue-700 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                         type="button"
-                        on:click={login}
+                        on:click={login_click}
                     >
                         Log ind
                     </button>

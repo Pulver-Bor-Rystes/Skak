@@ -1,5 +1,6 @@
 <script type="ts">
-    import { nget, npost } from '../stores/networking';
+    import { login, nget, npost } from '../stores/networking';
+    import { user_data } from '../stores/state';
     import type { Sex } from "../../../shared/types"
 
     let username = 'musmus9';
@@ -25,6 +26,8 @@
         
         password: string
     }
+
+    
 
     const on_signup = async () => {
         const details: Signup_details = {
@@ -56,8 +59,20 @@
             'password': _password,
         })
 
+        console.log("RESP:")
+        console.log(resp)
+
         if (resp.status)
-            console.log('Logged in!')
+            login((resp: Boolean) => {
+                console.log("loggin in")
+                if (resp) {
+                    $user_data.logged_in = true;
+                    $user_data.username = localStorage.getItem("username") as string;
+                }
+                else {
+                    $user_data.login_failed = true;
+                }   
+            })
         else
             console.log(resp?.errors)
     }

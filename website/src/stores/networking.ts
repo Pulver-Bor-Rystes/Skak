@@ -75,3 +75,37 @@ export function get_socket() {
         };
     }
 }
+
+
+function get_from_cookie(name: string) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+
+export async function login(callback: Function) {
+    // get username
+    var username = get_from_cookie("username");
+    // get cookie
+    var cookie = get_from_cookie("cookie");
+
+    console.log("loggin in with:", username, cookie)
+    
+    // attach socket from window's variable
+    // @ts-ignore
+    const socket = window.socket;
+    socket.emit("login", username, cookie);
+
+    socket
+        .on("login_success", () => {
+            localStorage.setItem("username", username as string);
+            callback(true)
+        })
+        .on("login_failure", () => callback(false))
+}
