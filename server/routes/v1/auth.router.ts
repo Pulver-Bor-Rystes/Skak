@@ -104,8 +104,6 @@ auth_router.post('/login', async (req: Request, res: Response) => {
                     selected_ids.push( find_least_used_cookie( user.cookies ) )
                 }
 
-                console.log(selected_ids)
-                
                 selected_ids.forEach(s_id => {
                     user.cookies.splice(s_id, 1)
                 })

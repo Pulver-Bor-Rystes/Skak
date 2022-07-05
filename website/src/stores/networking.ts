@@ -95,8 +95,6 @@ export async function login(callback: Function) {
     // get cookie
     var cookie = get_from_cookie("cookie");
 
-    console.log("loggin in with:", username, cookie)
-    
     // attach socket from window's variable
     // @ts-ignore
     const socket = window.socket;

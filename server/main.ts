@@ -4,11 +4,19 @@ import { Request, Response, NextFunction } from 'express'
 import { init_server } from './setup/server_setup'
 import { authenticate } from './routes/v1/auth.router'
 import User from './models/user.model'
-import { friends } from './socket/friends'
+import { friends_socket, friends_sync } from './socket/friends'
+import { disconnect_event_active_users, emit_to, init_active_users, join_event_active_users } from './socket/active_users'
+import { disconnect_event_lobby, join_event_lobby, lobby_socket } from './socket/lobby'
+import { disconnect_event_games, games_socket } from './socket/games'
+// import { test } from "../../CSM/dist/index"
+
+// test()
 
 
-
-const { app, io } = init_server()
+const { app, io } = init_server(() => {
+	friends_sync();
+});
+init_active_users(io);
 
 
 type PlayerData = {
@@ -52,11 +60,11 @@ io.on('connection', (socket: Socket) => {
 		let [resp, user] = await authenticate(login_username, temporary_cookie);
 
 
-		console.log(resp, user)
-		
 		if (resp) {
-			socket.emit('login_success');
 			username = (user as User).username;
+			join_event_active_users(username, sid);
+			join_event_lobby(sid, username);
+			emit_to(sid, 'login_success');
 
 			// burde gerne opdaterer sid i spillet
 			for (const game of games) {
@@ -72,13 +80,15 @@ io.on('connection', (socket: Socket) => {
 				}
 
 				if (found) {
-					socket.emit("current_game", game.id);
+					emit_to(sid, "current_game", game.id);
 
 					break;
 				}
 			}
 
-			friends(socket, io);
+			lobby_socket(socket, username);
+			friends_socket(socket, username);
+			games_socket(socket, username);
 
 			socket.on("move", ({new_move, pgn}) => {
 				// get game with the same id as the socket id
@@ -101,7 +111,7 @@ io.on('connection', (socket: Socket) => {
 					}
 					else {
 						// tell player that move was invalid
-						socket.emit('move_invalid', game.pgn);
+						emit_to(sid, 'move_invalid', game.pgn);
 					}
 				}
 			
@@ -109,22 +119,26 @@ io.on('connection', (socket: Socket) => {
 
 			socket.on("get_game_state", (game_id: string) => {
 				const game = games.find(game => game.id == game_id);
-				console.log(game)
 				if (!game) {
 					return;
 				}
 
-				socket.emit("game_created", game);
+				emit_to(sid, "game_created", game);
 			})
 		}
 		else {
-			socket.emit('login_failure');
+			emit_to(sid, 'login_failure');
 			return;
 		}
 
 		
 		// handle disconnect
 		socket.on('disconnect', () => {
+			disconnect_event_active_users(username, sid);
+			disconnect_event_lobby(username);
+			disconnect_event_games(username);
+
+
 			// if player is in lobby
 			if (lobby.find(player => player.socket_id === sid)) {
 				
@@ -152,25 +166,25 @@ io.on('connection', (socket: Socket) => {
 			}, 100 * 60 * 2)
 		});
 		
-		
+		// * OUTDATED
 		// handle join lobby event for socket
 		socket.on('join', () => {
 			// cant join if not logged in
 			if (username === "") {
-				socket.emit('join_failure', "You are not logged in");
+				emit_to(sid, 'join_failure', "You are not logged in");
 				return;
 			}
 	
 			// cant join if already in lobby
 			if (lobby.find(player => player.username === username)) {
 				update_lobby_on_clients(socket)
-				socket.emit('join_failure', "You are already in the lobby");
+				emit_to(sid, 'join_failure', "You are already in the lobby");
 				return;
 			}
 
 			// cant join if already in a game
 			if (games.find(game => game.white === username || game.black === username)) {
-				socket.emit('join_failure', "You are already in a game");
+				emit_to(sid, 'join_failure', "You are already in a game");
 				return;
 			}
 			
@@ -188,7 +202,7 @@ io.on('connection', (socket: Socket) => {
 					// if invitee has already invited you, accept the invite
 					if (lobby.find(player => player.username === username)?.invited_by_players.includes(invitee)) {
 						io.to(invitee_sid).emit('invite_accepted', username);
-						socket.emit('invite_accepted', invitee);
+						emit_to(username, 'invite_accepted', invitee);
 
 
 						setTimeout(async () => {
@@ -206,8 +220,8 @@ io.on('connection', (socket: Socket) => {
 							games.push(game);
 	
 							// send game to both players
-							io.to(sid).emit('game_created', game);
-							io.to(invitee_sid).emit('game_created', game);
+							emit_to(username, 'game_created', game);
+							emit_to(invitee, 'game_created', game);
 						}, 1000)
 
 
@@ -254,6 +268,7 @@ io.on('connection', (socket: Socket) => {
 app.get('/', (req: Request, res: Response) => {
 	res.redirect('/test/oversigt')
 })
+
 
 
 app.get('/test/:component', (req: Request, res: Response) => {

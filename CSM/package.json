@@ -1,0 +1,18 @@
+{
+  "name": "csm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "bt": "ts-node test.ts",
+    "test": "ts-node index.ts test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.0.1",
+    "typescript": "^4.7.4"
+  }
+}

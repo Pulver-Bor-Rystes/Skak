@@ -35,10 +35,6 @@
 
     let psw_level = 0;
     let psw_levels = ["", "border-green-500", "border-red-500"];
-
-
-
-
     let input_dark_css = "dark:bg-gray-700 dark:border-none dark:text-white"
 
 

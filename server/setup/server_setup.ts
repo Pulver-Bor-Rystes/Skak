@@ -47,7 +47,7 @@ declare module 'express' {
 
 
 
-export function init_server(): init_return {
+export function init_server(db_ready_callback: Function): init_return {
 	const env = JSON.parse(
 		readFileSync(process.cwd() + '/config/env.json', 'utf8')
 	)
@@ -104,6 +104,9 @@ export function init_server(): init_return {
 		})
 		.then(() => {
 			process.stdout.write("✅\n")
+			if (db_ready_callback) {
+				db_ready_callback();
+			}
 		});
 
 

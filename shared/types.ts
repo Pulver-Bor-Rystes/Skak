@@ -5,6 +5,13 @@ export type Sex = 'Male' | 'Female' | 'Other'
 
 
 // Interfaces
+export type Username = string;
+export type GameID = string;
+
+export type Game = {
+    subscribed: string[], // where: [0] = white, [1] = black
+    state: string // pgn format
+}
 
 export interface Rating {
     'bullet': number

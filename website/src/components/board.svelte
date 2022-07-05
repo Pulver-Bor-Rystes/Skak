@@ -2,14 +2,17 @@
     import { Chess, type Square } from 'chess.js'
     import { get_socket } from "../stores/networking";
     import { onMount } from "svelte";
-	import { user_data } from '../stores/state';
+	import { G_inv_recieved, user_data } from '../stores/state';
+	import type { Game, GameID, Username } from '../../../shared/types';
 
 
-    export let game_id: string;
+    export let game_id: GameID;
     let socket: any;
     
+	let white: Username = "";
+	let black: Username = "";
     
-    let game: any;
+    let cgame: Game;
     let board = new Chess()
 
     let current_square = ""
@@ -20,17 +23,22 @@
         socket = get_socket();
 
         // @ts-ignore
-        window["board"] = board; window["update"] = update_board_state; window["game"] = game;
+        window["board"] = board; window["update"] = update_board_state; window["game"] = cgame;
         
         socket
-            .on("game_created", (new_game_state: any) => {
-				game = new_game_state;
-                board.load_pgn(new_game_state.pgn);
+			.on("notif:games/created", (game: Game) => {
+				console.log("game created!", game)
+				cgame = game;
+				white = game.subscribed[0];
+				black = game.subscribed[1];
+				board.load_pgn(game.state);
+
 				update_board_state();
-				if (game.black == $user_data.username) {
+				
+				if (black == $user_data.username) {
 					switch_direction()
 				}
-            })
+			})
             .on("move_made", (move: string) => {
                 board.move(move);
 				update_board_state();
@@ -38,7 +46,18 @@
             .on("move_invalid", (pgn: string) => {
 				board.load_pgn(pgn)
 				update_board_state();
-            });
+            })
+			.on("res:games/state", (game: any) => {
+				console.log(game)
+			})
+			.on("notif:games/move", ([gi, pgn_before, move]: [GameID, string, string]) => {
+				if (gi != game_id) {
+					return;
+				}
+				board.load_pgn(pgn_before);
+				board.move(move);
+				update_board_state();
+			});
 
 
 
@@ -87,13 +106,15 @@
 
 		if (new_move) {
 			// if it is my turn to play
-			if ((board.turn() == "w" && game?.white == $user_data.username) || board.turn() == "b" && game?.black == $user_data.username) {
+			if ((board.turn() == "w" && white == $user_data.username) || board.turn() == "b" && black == $user_data.username) {
+				const pgn_before = board.pgn();
 				board.move(new_move) 
 				// send move to server
 				socket.emit("move", {
 					"new_move": new_move,
 					"pgn": board.pgn()
 				})
+				socket.emit("games/move", game_id, new_move, pgn_before)
 				current_square = ""
 			}
 		}
@@ -123,37 +144,40 @@
 
 
 
-<div class="wrapper" style="--size: 300px">
-    <div class="board">
-        {#each [1, 0, 1, 0, 1, 0, 1, 0] as x_tile, iy}
-            {#each [1, 0, 1, 0, 1, 0, 1, 0] as y_tile, ix}
-                {@const square = `${letters[ix]}${ letters[0] == "a" ? 8-iy:iy+1 }`}
-                
-                <p hidden>{square}</p>
-                <div on:click={() => move_piece(square)} id="{square}" class={ (x_tile + y_tile ) == 1 ? "black":"white" }>
-                    {#if wrapper_board_get(square)}
-                        <img 
-                            class="obj"
-                            src={get_src( square )}
-                            alt=""
-                        >
-                    {/if}
-                    
-                    {#each current_moves as move}
-                        {#if move.includes( square )}
-                            <div class="highlight {move.includes("+") || move.includes("#") ? "h-red":"h-green"}"></div>
-                        {/if}
-                    {/each}
-                </div>
+{#if String(game_id) != "undefined"}
+	<div class="wrapper" style="--size: 300px">
+		<div class="board">
+			{#each [1, 0, 1, 0, 1, 0, 1, 0] as x_tile, iy}
+				{#each [1, 0, 1, 0, 1, 0, 1, 0] as y_tile, ix}
+					{@const square = `${letters[ix]}${ letters[0] == "a" ? 8-iy:iy+1 }`}
+					
+					<p hidden>{square}</p>
+					<div on:click={() => move_piece(square)} id="{square}" class={ (x_tile + y_tile ) == 1 ? "black":"white" }>
+						{#if wrapper_board_get(square)}
+							<img 
+								class="obj"
+								src={get_src( square )}
+								alt=""
+							>
+						{/if}
+						
+						{#each current_moves as move}
+							{#if move.includes( square )}
+								<div class="highlight {move.includes("+") || move.includes("#") ? "h-red":"h-green"}"></div>
+							{/if}
+						{/each}
+					</div>
 
-            {/each}
-        {/each}
-    </div>
-</div>
+				{/each}
+			{/each}
+		</div>
+	</div>
+	
+	<!-- Controls -->
+	<p>{white} VS. {black}</p>
+	<button on:click={switch_direction}>x</button>
+{/if}
 
-<!-- Controls -->
-<p>{game?.white} VS. {game?.black}</p>
-<button on:click={switch_direction}>x</button>
 
 
 
