@@ -2,6 +2,7 @@ import { Game, GameID, Username } from "../../shared/types";
 import { Server, Socket } from "socket.io";
 import { emit_to, is_player_online } from "./active_users";
 import { check_if_it_already_exists, _request } from "./friends";
+import { Board } from "../../CSM/dist/index";
 
 let invitations: { [key: string]: Boolean } = {}
 // let games: any = {}
@@ -54,6 +55,11 @@ export function games_socket(socket: Socket, username: string) {
 
     socket.on("games/move", (game_id: string, move, pgn_before: string) => {
         if (game_id in games) {
+            let temp_board = new Board();
+
+            temp_board.log()
+
+            // if (Object.keys(temp_board.simple_moves).includes(move)) {
             if (true) {
                 emit_to(games[game_id].subscribed, "notif:games/move", [game_id, pgn_before, move])
             }
