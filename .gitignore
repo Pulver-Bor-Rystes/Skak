@@ -1,0 +1,8 @@
+**/*node_modules/
+
+.DS_Store
+
+ideas.md
+**/*/config/
+CSM/index.js
+CSM/dist/
