@@ -13,8 +13,21 @@ type Game = {
 }
 
 
+export interface FriendsInfo {
+    "combined": string[]
+    "online": string[]
+    "offline": string[]
+}
 
-export const friends: Writable<string[]> = writable([]);
+
+export const friends: Writable<string[]> = writable(["?"]);
+
+export const my_friends: Writable<FriendsInfo> = writable({
+    "combined": [],
+    "online": [],
+    "offline": []
+});
+
 export const inv_received: Writable<string[]> = writable([]);
 export const inv_send: Writable<string[]> = writable([]);
 

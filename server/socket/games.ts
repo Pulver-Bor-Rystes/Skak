@@ -1,8 +1,8 @@
 import { Game, GameID, Username } from "../../shared/types";
 import { Server, Socket } from "socket.io";
-import { emit_to, is_player_online } from "./active_users";
+import { emit_to, is_player_online, Responder } from "./active_users";
 import { check_if_it_already_exists, _request } from "./friends";
-import { Board } from "../../CSM/dist/index";
+import { Chess } from "../../CSM/dist/src/chess"
 
 let invitations: { [key: string]: Boolean } = {}
 // let games: any = {}
@@ -12,40 +12,47 @@ var games: { [key: string]: Game; } = {};
 let users_in_games: { [key: Username]: GameID } = {}
 
 
+export class Games {
+    static route (route: string, socket: Socket, username: Username) {
+        let portal = new Responder (socket, route);
 
+        portal
+            .on ("invite", (player_name, answer) => {
+                if (!player_name) {
+                    return;
+                }
+        
+                if (check_if_it_already_exists(games, [player_name, username])) {
+                    answer (username, "already_in_game");
+                    return;
+                }
+        
+                let res: string;
+                [invitations, res] = _request(invitations, username, player_name);
+        
+                switch (res) {
+                    case "accepted":
+                        send_state([username, player_name], [username, player_name]);
+                        game_new(username, player_name);
+                        break;
+        
+                    case "pending":
+                        send_state([username, player_name], [username, player_name]);
+                        break;
+        
+                    default:
+                        break;
+                }
+            })
+        .on ("get", () => {
+            send_state (username, username);
+        })
+    }
+}
 
 
 
 export function games_socket(socket: Socket, username: string) {
-    socket.on("games/invite", (player_name: string) => {
-        if (!player_name) {
-            return;
-        }
-        console.log("inviting:", player_name)
-
-        if (check_if_it_already_exists(games, [player_name, username], "res:games/invite", "already_in_game")) {
-            return;
-        }
-
-        let res: string;
-        [invitations, res] = _request(invitations, username, player_name);
-
-        switch (res) {
-            case "accepted":
-                send_state([username, player_name], [username, player_name]);
-                game_new(username, player_name);
-                break;
-
-            case "pending":
-                send_state([username, player_name], [username, player_name]);
-                break;
-
-            default:
-                break;
-        }
-    })
-
-
     socket.on("games/state", (game_id: GameID) => {
         if (game_id in games) {
             emit_to(socket.id, "res:games/state", games[game_id]);
@@ -55,12 +62,18 @@ export function games_socket(socket: Socket, username: string) {
 
     socket.on("games/move", (game_id: string, move, pgn_before: string) => {
         if (game_id in games) {
-            let temp_board = new Board();
+            let temp_board = new Chess();
+
+            let moves = temp_board
+                .load_pgn (pgn_before)
+                .gen ()
+                .moves
+
+            temp_board.move(move);
 
             temp_board.log()
 
-            // if (Object.keys(temp_board.simple_moves).includes(move)) {
-            if (true) {
+            if (moves.includes (move)) {
                 emit_to(games[game_id].subscribed, "notif:games/move", [game_id, pgn_before, move])
             }
         }
@@ -147,6 +160,7 @@ export function disconnect_event_games(username: string) {
             for (const rec of Object.keys(obj)) {
                 if (rec.includes(username)) {
 
+                    //!ERR: Der kan ske en fejl her, når man inviterer en person til en spil. Personen gør intet og en af personerne forlader
                     let subs = ("subscribed" in obj[rec]) ? (obj[rec] as Game)["subscribed"] : [];
                     delete obj[rec];
                     send_state(subs, subs);
@@ -158,8 +172,7 @@ export function disconnect_event_games(username: string) {
             delete users_in_games[username];
         }
 
-        console.clear();
-        console.log(games, invitations)
+        // console.log(games, invitations)
 
         send_state(username, username);
     }
