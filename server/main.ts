@@ -5,10 +5,9 @@ import { init_server } from './setup/server_setup'
 import { authenticate } from './routes/v1/auth.router'
 import User from './models/user.model'
 import { Friends, friends_socket, friends_sync } from './socket/friends'
-import { ActiveUsers, disconnect_event_active_users, emit_to, init_active_users, join_event_active_users } from './socket/active_users'
-import { disconnect_event_lobby, join_event_lobby, lobby_socket } from './socket/lobby'
-import { disconnect_event_games, Games, games_socket } from './socket/games'
-
+import { ActiveUsers, emit_to } from './socket/active_users'
+import { lobby_socket } from './socket/lobby'
+import { Games, games_socket } from './socket/games'
 
 // test()
 
@@ -26,29 +25,9 @@ type PlayerData = {
 	socket_id: string;
 	invited_by_players: string[];
 }
-const lobby: PlayerData[] = [];
-
-export type Game = {
-	id: string
-	white: string
-	black: string
-	turn: Boolean
-	socket_ids: string[]
-	pgn: string
-}
 
 
-const games: Game[] = [];
 
-
-// make a function that updates the clients lobby
-function update_lobby_on_clients(medium: any) {
-	// send the lobby to the client without the invited_by_players
-	medium.emit('update_lobby', lobby.map(player => ({
-		username: player.username,
-		socket_id: player.socket_id,
-	})));
-}
 
 
 // Socket forbindelser
@@ -66,6 +45,7 @@ io.on('connection', (socket: Socket) => {
 			username = (user as User).username;
 			ActiveUsers.join_event (sid, username);
 			ActiveUsers.emit_to(sid, 'login_success');
+
 
 			ActiveUsers.route ("au", socket, username);
 			Games.route ("games", socket, username);
@@ -88,9 +68,6 @@ io.on('connection', (socket: Socket) => {
 
 		});	
 	})
-
-
-
 })
 
 

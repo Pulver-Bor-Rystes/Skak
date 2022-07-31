@@ -16,8 +16,8 @@ const DEFAULT_PIECE = 'EMPTY';
 type Behaviour = 'SLIDE' | "NOTHING"
 
 
-const x12_valid_indexes = [26, 27, 28, 29, 30, 31, 32, 33, 38, 39, 40, 41, 42, 43, 44, 45, 50, 51, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 74, 75, 76, 77, 78, 79, 80, 81, 86, 87, 88, 89, 90, 91, 92, 93, 98, 99, 100, 101, 102, 103, 104, 105, 110, 111, 112, 113, 114, 115, 116, 117];
-
+const x12_valid_indexes: x12_index[] = [26, 27, 28, 29, 30, 31, 32, 33, 38, 39, 40, 41, 42, 43, 44, 45, 50, 51, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 74, 75, 76, 77, 78, 79, 80, 81, 86, 87, 88, 89, 90, 91, 92, 93, 98, 99, 100, 101, 102, 103, 104, 105, 110, 111, 112, 113, 114, 115, 116, 117];
+const x12_to_x8: { [key: x12_index]: x8_index } = {27: 1, 28: 2, 29: 3, 30: 4, 31: 5, 32: 6, 33: 7, 38: 8, 39: 9, 40: 10, 41: 11, 42: 12, 43: 13, 44: 14, 45: 15, 50: 16, 51: 17, 52: 18, 53: 19, 54: 20, 55: 21, 56: 22, 57: 23, 62: 24, 63: 25, 64: 26, 65: 27, 66: 28, 67: 29, 68: 30, 69: 31, 74: 32, 75: 33, 76: 34, 77: 35, 78: 36, 79: 37, 80: 38, 81: 39, 86: 40, 87: 41, 88: 42, 89: 43, 90: 44, 91: 45, 92: 46, 93: 47, 98: 48, 99: 49, 100: 50, 101: 51, 102: 52, 103: 53, 104: 54, 105: 55, 110: 56, 111: 57, 112: 58, 113: 59, 114: 60, 115: 61, 116: 62, 117: 63 };
 
 interface Move {
     from: Square
@@ -64,21 +64,58 @@ type x12_index = number;
 
 
 
+function convert_x8_to_x12(x8: x8_index): x12_index {
+    let offset = 26;
+
+    for (let off=1; off <= 9; off++) {
+        if (x8 < (off*8)) {
+            break;
+        }
+
+        offset += 4;
+    }
+
+    return x8 + offset;
+}
+
+function convert_x12_to_x8(x12: x12_index): x8_index {
+    return x12_to_x8[x12] as x8_index;
+}
+
+
+
+
 
 class BoardData {
     extended: Boolean;
     colors: Color[];
     pieces: Piece[];
 
-    constructor(lim: number = 8) {
+    constructor (lim: number = 8) {
         this.colors = default_x(lim) as Color[];
         this.pieces = default_x(lim) as Piece[];
         this.extended = lim != 8;
     }
 
+
+
+    get_piece_square (piece: Piece, color: Color): Square | false {
+        let square: Square | false = false;
+
+        for (let i=0; i<this.colors.length; i++) {
+            if (this.colors[i] == color && this.pieces[i] == piece) {
+                let x8 = this.extended ? convert_x12_to_x8(i) : i;
+                
+                square = squares[x8];
+            }
+        }
+        
+        return square;
+    }
+
     
     // loader et x8 board
-    from_x8(board: BoardData) {
+    from_x8 (board: BoardData) {
         if (this.extended && !board.extended) {
             // skal kun loade et x8 board, hvi
 
@@ -98,7 +135,7 @@ class BoardData {
         }
     }
 
-    log(info?: { turn: Color, moves_made: number, available_moves: number }) {
+    log (info?: { turn: Color, moves_made: number, available_moves: number, en_passant?: Square }) {
         const max = this.extended ? 12:8;
                 
         let count = max;
@@ -109,14 +146,17 @@ class BoardData {
                 let space = y < 10 ? " ":"";
 
                 if (info) {
-                    if (y == 4) {
+                    if (y == 5) {
                         process.stdout.write(`     turn: ${info.turn}`)
                     }
-                    else if (y == 3) {
+                    else if (y == 4) {
                         process.stdout.write(`     number of moves made: ${info.moves_made}`)
                     }
-                    else if (y == 2) {
+                    else if (y == 3) {
                         process.stdout.write(`     available moves: ${info.available_moves}`)
+                    }
+                    else if (y == 2) {
+                        process.stdout.write(`     én passant: ${info.en_passant}`)
                     }
                 }
 
@@ -151,7 +191,7 @@ class BoardData {
         process.stdout.write("\n");
     }
 
-    to_x8() {
+    to_x8 () {
         if (this.extended) {
             let board = new BoardData;
 
@@ -189,6 +229,8 @@ export class Board {
     temp_x8board = new BoardData;
     x12board = new BoardData(12);
 
+    // key: ghost_x12_pos -> [ real_x8_pos, real_x12_pos ]
+    // jeg er lidt i tvivl om hvorvidt index=0 overhovedet bliver brugt...
     enpassant: { [key: x12_index]: [x8_index, x12_index]; } = {};
 
     turn: Color = "LIGHT";
@@ -658,7 +700,8 @@ export class Board {
         }
         else {
             // @ts-ignore
-            let square = squares[this.enpassant[keys[0]][0]];
+            let x8_i = this.x12_index_to_x8(keys[0]);
+            let square = squares[x8_i];
             fen_string += ` ${square}`;
         }
 
@@ -673,16 +716,97 @@ export class Board {
 
 
 
+    private check_for_checks() {
+        for (let sm of Object.keys(this.simple_moves)) {
+            console.log("\n" + sm)
+            let move = this.simple_moves[sm];
+            // vi har et træk.
+            // lav trækket på et falsk board
+            // og tjek om den modsatte konge er i fare.
+
+            let temp_board = this.new_board_from_move(move);
+            temp_board.to_x12();
+            let king_square = temp_board.x12board.get_piece_square("KING", temp_board.turn) // får fat i den konge hvis tur det er.
+
+            if (!king_square) {
+                return;
+            }
+
+            // vi skal egentlig bare tjekke om kongen kan blive taget i de to retninger der er.
+            // 1. retningen, som er fra kongens position til den nye placering.
+            // 2. retningen, som er -||- til den gamle placering.
+            
+            // tjek i retning som en løber og hvis den støder ind i løber eller dronning
+
+            let check_discovered = false;
+            let bishop_directions = [11, 13, -11, -13];
+
+
+            const king_index = squares.indexOf(king_square);
+
+            let old_dir = 0;
+            let new_dir = 0;
+
+            // hvis den har samme bogstav, så kan den jo kun gå op eller ned
+            // 6 > 4 -> 12
+            new_dir += move.to[1] != king_square[1] && move.to[1] < king_square[1]
+                ? 12:-12;
+            new_dir += move.to[0] != king_square[0] && square_letters.indexOf(move.to[0] as Square_Letter) > square_letters.indexOf(king_square[0] as Square_Letter)
+                ? 1:-1;
+
+            old_dir += move.from[1] != king_square[1] && move.from[1] < king_square[1]
+                ? 12:-12;
+            old_dir += move.from[0] != king_square[0] && square_letters.indexOf(move.from[0] as Square_Letter) > square_letters.indexOf(king_square[0] as Square_Letter)
+                ? 1:-1;
+
+            console.log(new_dir, old_dir)
+
+            for (let dir of bishop_directions) {
+                // tjek om vi støder ind i en dronning eller bishop
+
+                let index = convert_x8_to_x12(king_index);
+
+                while (true) {
+                    index += dir;
+                    if (!x12_valid_indexes.includes(index)) {
+                        // så er vi uden for brættet
+                        break;
+                    }
+
+                    let piece = temp_board.x12board.pieces[index];
+                    let color = temp_board.x12board.colors[index];
+
+                    if (color != this.turn) {
+                        continue;
+                    }
+
+                    if (piece == "BISHOP" || piece == "QUEEN") {
+                        check_discovered = true;
+                        break;
+                    }
+                }
+            }
+
+            if (check_discovered) {
+                console.log(`move: ${sm} makes a check!`);
+            }
+            
+        }
+    }
+
+
+
     /**
      * Beregner alle mulige træk!
     **/
     gen() {
-        this.gen_pseudo_legal()
-        this.simplify_moves()
+        this.gen_pseudo_legal();
+        this.simplify_moves();
 
         if (this.for_realsies) {
-            this.pick_legal()
-        } 
+            this.pick_legal();
+            this.check_for_checks();
+        }
     }
 
 
@@ -738,10 +862,14 @@ export class Board {
         if (parts_space[3]) {
             if (parts_space[3] != "-") {   
                 let square = parts_space[3] as Square;
-                let x8_i = squares.indexOf(square);
-                
+                let gx8_i = squares.indexOf(square);
+                let gx12_i = this.x8_index_to_x12(gx8_i);
 
+                // real
+                let x8 = square[1] == "3" ? this.x12_index_to_x8( gx12_i + 8 ) : this.x12_index_to_x8( gx12_i - 8 );
+                let x12 = this.x8_index_to_x12(x8)
                 
+                this.enpassant[gx12_i] = [x8, x12];
             }
         }
 
@@ -824,7 +952,17 @@ export class Board {
 
 
     log() {
-        this.x8board.log({turn: this.turn, moves_made: this.number_of_moves, available_moves: this.moves.length});
+        let square: Square | null = null;
+        if (Object.keys(this.enpassant).length != 0) {
+            square = squares[ this.x12_index_to_x8 (Number(Object.keys(this.enpassant)[0])) ]
+        }
+
+        if (square) {
+            this.x8board.log({turn: this.turn, moves_made: this.number_of_moves, available_moves: this.moves.length, en_passant: square});
+        }
+        else {
+            this.x8board.log({turn: this.turn, moves_made: this.number_of_moves, available_moves: this.moves.length });
+        }
         // this.x8board.log();
     }
 
@@ -836,7 +974,7 @@ export class Board {
         this.x8board = this.x12board.to_x8();
     }
 
-    private x8_index_to_x12(index: x12_index) {
+    private x8_index_to_x12(index: x8_index) {
         let offset = 26;
 
         for (let off=1; off <= 9; off++) {
@@ -848,6 +986,10 @@ export class Board {
         }
 
         return index + offset;
+    }
+
+    private x12_index_to_x8(index: x12_index) {
+        return x12_to_x8[index] as x8_index;
     }
 
 
@@ -1056,13 +1198,12 @@ export class Board {
 
 if (process.argv[2] == "test") {
     console.clear()
-    // let b = new Board("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
-    let b = new Board;
-
-    b.move("a4")
-   
+    let b = new Board("b6k/1p6/8/8/p3K2p b - -");
+    // let b = new Board;
+    
     b.log()
-    console.log(b.to_fen())
+    console.log(b.simple_moves)
+    // console.log(b.to_fen())
 }
 
 

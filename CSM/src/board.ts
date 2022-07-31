@@ -99,6 +99,7 @@ export class Board {
         this.colors [Helper.square_to_i12 (move.to)] = Helper.convert_player_color_to_color (turn);
         this.pieces [Helper.square_to_i12 (move.to)] = move.piece;
 
+
         // returnér en passant
         if (move.piece == "PAWN") {
             if (move.from[1] == "2" && move.to[1] == "4") {
@@ -143,8 +144,8 @@ export class Board {
         }
 
         return move;
-    }
 
+    }
 
 
 
