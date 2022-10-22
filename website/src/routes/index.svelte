@@ -108,11 +108,11 @@
 
 
 
-
 <div class="m-1 p-1">
     <Board game_id={$games[0]}/>
 </div>
 
+<a class="p-5 mt-5 text-xl text-yellow-300" href="/home"> Tryk her for at komme til den nye hjemmeside!</a>
 
 
 

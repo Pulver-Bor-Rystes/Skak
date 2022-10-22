@@ -2,7 +2,7 @@ import { Board } from "./board";
 import { diagonals, Helper, horse, lateral, Move, Piece, PlayerColor, Square, squares, x12_index } from "./helpers";
 
 export class Chess {
-    private board = new Board;
+    board = new Board;
     private fake = new Board;
 
     turn: PlayerColor = "WHITE";
@@ -36,7 +36,9 @@ export class Chess {
         this.on_draw = on_draw;
     }
 
-
+    load_default () {
+        this.load_fen ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+    }
 
 
     load_fen (str: string) {
@@ -473,7 +475,6 @@ export class Chess {
 
         return this;
     }
-
 
     
     

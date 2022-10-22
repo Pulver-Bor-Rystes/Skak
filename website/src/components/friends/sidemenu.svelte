@@ -28,7 +28,10 @@
 
 
 <div class="grid grid-rows-[75px_1fr_75px] bg-zinc-900 h-screen">
-    <h1 class="text-2xl text-center p-5">Venner</h1>
+    <span class="flex justify-center">
+        <h1 class="text-2xl text-center p-5">Venner</h1>
+        <button class="h-7 self-center pl-2 pr-2 bg-slate-400 rounded text-black"> tilføj </button>
+    </span>
 
     {#if $friends.length == 0}
         <div class="h-fit self-center justify-center grid">
@@ -50,7 +53,7 @@
                     <Friend name={friend_name} online={false}/>
                 {/each}
             </div>
-            <button class="bg-slate-700 shadow-xl rounded-xl m-2 p-3 pr-5 pl-5 text-center text-xl transition-all hover:text-pink-200 hover:text-2xl">Tilføj ven!</button>
+            <!-- <button class="bg-slate-700 shadow-xl rounded-xl m-2 p-3 pr-5 pl-5 text-center text-xl transition-all hover:text-pink-200 hover:text-2xl">Tilføj ven!</button> -->
         {/if}
     {/if}
 </div>

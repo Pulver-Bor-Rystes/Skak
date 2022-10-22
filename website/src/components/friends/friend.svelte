@@ -6,6 +6,8 @@
     export let name: string;
     export let online: boolean;
 
+    
+
     let socket: Socket;
     onMount (() => {
         socket = get_socket ();
@@ -33,6 +35,12 @@
 </script>
 
 
-<div class="rounded p-1 pl-2 mb-2 ml-2 mr-2 {online ? 'bg-gray-700 cursor-pointer':'bg-gray-800'}">
-    <p on:click={() => { socket.emit ("games/invite", name) }} class="text-lg  {online ? '':'text-gray-500'}"> {name} <span class="text-lg text-slate-500 float-right"> {state} </span> </p>
+<div class="p-1 pl-2 mb-2 ml-2 mr-2">
+    <p class="text-lg  {online ? '':'text-gray-500'}"> {name}
+
+    {#if online}
+        <span on:click={() => { socket.emit ("games/invite", name) }} class="text-lg bg-[#30373e] rounded pr-5 pl-5 text-slate-100 float-right hover:cursor-pointer hover:bg-[#013c6e] transition-colors"> {state} </span>
+    {/if}
+
+    </p>
 </div>

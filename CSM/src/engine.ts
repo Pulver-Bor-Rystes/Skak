@@ -15,11 +15,14 @@ chess.load_fen ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 // chess.load_fen ("6kr/5ppp/8/8/8/8/5PPP/R4RK1 w - - 1 1")
 
 
-chess.load_pgn("1. a4 a5 2. b4 b5 3. c4 Nc6 4. cxb5 Nxb4 5. Ra2");
+// chess.load_pgn("1. a4 a5 2. b4 b5 3. c4 Nc6 4. cxb5 Nxb4 5. Ra2");
 
-
+chess.gen()
+    .move("a4")
+    .move("Nf6")
     
-console.log (chess.legal_moves.filter ((m) => m.piece == "BISHOP"))
+// console.log (chess.legal_moves.filter ((m) => m.piece == "BISHOP"))
 
 chess.log ();
+// console.log(chess.legal_moves)
 console.log (chess.moves)

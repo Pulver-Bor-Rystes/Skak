@@ -109,12 +109,14 @@
 			if ((board.turn() == "w" && white == $user_data.username) || board.turn() == "b" && black == $user_data.username) {
 				const pgn_before = board.pgn();
 				board.move(new_move) 
+				
 				// send move to server
-				socket.emit("move", {
-					"new_move": new_move,
-					"pgn": board.pgn()
-				})
-				socket.emit("games/move", game_id, new_move, pgn_before)
+				socket.emit("games/move", {
+					"game_id": game_id,
+					"move": new_move,
+				});
+
+				socket.emit("games/_move", game_id, new_move, pgn_before)
 				current_square = ""
 			}
 		}

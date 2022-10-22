@@ -15,7 +15,7 @@ export class Board {
     }
     
     
-    get_all_pieces (type: Piece | "*", turn_color: Color | "*", callback: (square: Square, i: x12_index, piece: Piece) => void) {
+    get_all_pieces (type: Piece | "*", turn_color: Color | "*", callback: (square: Square, i: x12_index, piece: Piece, color: Color) => void) {
         
         for (let i = 0; i < 12*12; i++) {
             let color = this.colors[i];
@@ -32,7 +32,7 @@ export class Board {
             
             let square = squares[Helper.convert_x12_to_x8 (i)];
             
-            callback (square, i, piece);
+            callback (square, i, piece, color);
         }
     }
 

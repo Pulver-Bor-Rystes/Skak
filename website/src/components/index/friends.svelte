@@ -50,7 +50,7 @@
 
 
         let iid = setInterval (() => {
-            if ($user_data.login_failed) clearInterval (iid);
+            // if ($user_data.login_failed) clearInterval (iid);
             if ($user_data.logged_in) {
                 socket.emit ("friends/fetch")
                 socket.emit ("friends/get")
@@ -58,7 +58,7 @@
                 clearInterval (iid);
             }
 
-        }, 100)
+        }, 500)
     })
 
 

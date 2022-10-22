@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { ActiveUsers, emit_to, is_player_online, Responder } from '../socket/active_users';
+import { ActiveUsers, emit_to, is_player_online, Responder, State3 } from '../socket/active_users';
 import { collections } from "../setup/database";
 import { Username } from "../../shared/types";
 
@@ -7,28 +7,93 @@ import { Username } from "../../shared/types";
 let invitations: { [key: string]: Boolean } = {}
 let friendships: { [key: string]: Boolean } = {}
 
+let state = new State3 ("friends")
 
 
 export class Friends {
-    static init() {
+    
+    
+    static init () {
         ActiveUsers.subscribe_to_join_event ((sid, username) => {
+            // Fortæl vennerne at man er online
             let my_friends = Friends.get_friends (username);
 
             for (let friend of my_friends) {
                 Friends.who_of_my_friends_are_online (friend, friend);
             }
         });
+        
 
         ActiveUsers.subscribe_to_disconnect_event ((sid, username, offline) => {
+            // Fortæl vennerne at man er gået offline, hvis man altså er offline
             if (offline) {
                 let my_friends = Friends.get_friends (username);
-    
+                
                 for (let friend of my_friends) {
                     Friends.who_of_my_friends_are_online (friend, friend);
                 }
             }
         });
     }
+    
+    
+    static route (route: string, socket: Socket, username: Username) {
+        let portal = new Responder (socket, route);
+
+        portal
+            .on ("_request", (player_name, answer, fail) => {
+                // Stop hvis der prøves at invitere sig selv
+                if (username == player_name) return;
+
+                // Stop hvis venskabet allerede eksisterer
+                if (check_if_it_already_exists(friendships, [player_name, username])) {
+                    fail (socket.id, "already_friends");
+                    return;
+                }
+        
+                let res: string;
+                [invitations, res] = _request(invitations, username, player_name);
+                
+                if (res == "accepted") {
+                    friendships[`${username}&${player_name}`] = true;
+                    add_friendship (username, player_name);
+                    remove_friend_request (username, player_name);
+        
+                    // den første bruges som notifikation at noget er sket, og den anden bliver brugt til at fortælle klienten præcis hvad der sker
+                    answer ([username, player_name], [res, [username, player_name]])
+                    send_state ([username, player_name]); // TODO: Find på noget bedre...
+                }
+        
+                if (res == "pending") {
+                    add_friend_request(username, player_name);
+                    answer ([username, player_name], [res, [username, player_name]]);
+                    send_state ([username, player_name]);
+                }
+        
+                if (res == "already_requested") {
+                    answer (username, [res, player_name])
+                }
+            })
+            .on ("request", (player_name, answer, fail) => {
+                let res = state.handle_interaction (username, player_name);
+
+                if (res == "accepted") {
+                    db_sync_friendship (username, player_name);
+                    db_remove_friend_request (username, player_name);
+                }
+                else if (res == "pending") {
+                    db_add_friend_request (username, player_name);
+                }
+
+                state.log ()
+            })
+
+            .on ("get", (_, answer, fail) => {
+                Friends.who_of_my_friends_are_online (socket.id, username);
+            })
+    }
+
+
 
 
 
@@ -64,47 +129,6 @@ export class Friends {
     }
 
 
-    static route (route: string, socket: Socket, username: Username) {
-        let portal = new Responder (socket, route);
-
-        portal
-            .on ("request", (player_name, answer, fail) => {
-                // Stop hvis der prøves at invitere sig selv
-                if (username == player_name) return;
-
-                // Stop hvis venskabet allerede eksisterer
-                if (check_if_it_already_exists(friendships, [player_name, username])) {
-                    fail (socket.id, "already_friends");
-                    return;
-                }
-        
-                let res: string;
-                [invitations, res] = _request(invitations, username, player_name);
-                
-                if (res == "accepted") {
-                    friendships[`${username}&${player_name}`] = true;
-                    add_friendship (username, player_name);
-                    remove_friend_request (username, player_name);
-        
-                    // den første bruges som notifikation at noget er sket, og den anden bliver brugt til at fortælle klienten præcis hvad der sker
-                    answer ([username, player_name], [res, [username, player_name]])
-                    send_state ([username, player_name]); // TODO: Find på noget bedre...
-                }
-        
-                if (res == "pending") {
-                    add_friend_request(username, player_name);
-                    answer ([username, player_name], [res, [username, player_name]]);
-                    send_state ([username, player_name]);
-                }
-        
-                if (res == "already_requested") {
-                    answer (username, [res, player_name])
-                }
-            })
-        .on ("get", (_, answer, fail) => {
-            Friends.who_of_my_friends_are_online (socket.id, username);
-        })
-    }
 
 
 
@@ -241,6 +265,20 @@ function add_friend_request(from: string, to: string) {
 function add_friendship(from: string, to: string) {
     collections.users?.updateOne({ username: from }, { $push: { friends: to } })
     collections.users?.updateOne({ username: to }, { $push: { friends: from } })
+}
+
+
+function db_sync_friendship (from: string, to: string) {
+    add_friend_request (from, to);
+}
+
+
+function db_add_friend_request (from: string, to: string) {
+    add_friend_request (from, to);
+}
+
+function db_remove_friend_request (from: string, to: string) {
+    remove_friend_request (from, to);
 }
 
 

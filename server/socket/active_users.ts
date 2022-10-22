@@ -168,6 +168,133 @@ export class Responder {
 
 
 
+export class State3 {
+    connections: { [key: string]: Boolean } = {};
+    invitations: { [key: string]: Boolean } = {};
+
+    /** Underretter ens ven eller den person brugeren har en forbindelse til */
+    notify_conn_mate = false;
+    topic: string;
+    new_conn_state: any;
+
+
+    // connection, through, handle, discover, interaction
+    constructor (topic?: string, new_conn_state?: any) {
+        this.topic = topic || "";
+        this.new_conn_state = new_conn_state || true;
+    }
+
+
+    log () {
+        console.log (this.topic + ": CONNS & INVS")
+        console.log (this.connections)
+        console.log (this.invitations)
+    }
+
+
+
+    /** En funktion som håndterer når en spiller prøver at invitere/acceptere. Erstatter det gamle request/invite */
+    handle_interaction (from: Username, to: Username) {
+        // Gør alt hvad den normale request funktion gjorde, men underretter også de påvirkede spillere
+        // Dog er der nogen gange hvor alle på netværket skal vide hvad der sker.
+
+        if (from == to) return;
+        if (this.connection_exists (from, to)) return;
+        
+        let res: string;
+        [this.invitations, res] = this.request (this.invitations, from, to);
+
+        if (["accepted", "pending"].includes (res)) {
+            this.update_player_state (from, true);
+        }
+        else {
+            emit_to (from, `${this.topic}/feedback`, [res, to]);
+        }
+
+        return res;
+    }
+
+    connection_exists (from: Username, to: Username) {
+        for (let conn of Object.keys (this.connections)) {
+            if (conn.includes (from) && conn.includes (to)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** En funktion som sender en masse informationer til en bestemt spiller */
+    update_player_state (name: Username, _notify_conn_mate?: boolean) {
+        const user_and_conn_mates = [name].concat (this.get_conn_mates (name));
+
+        let state = new State3;
+        
+        for (const name of user_and_conn_mates) {
+            state.apply_state_by_name (this, name);
+        }
+
+        emit_to ((this.notify_conn_mate || _notify_conn_mate) ? user_and_conn_mates:name, `${this.topic}/update`, {
+            "connections": state.connections, 
+            "invitations": state.invitations,
+        })
+    }
+
+
+    get_conn_mates (name: Username) {
+        let mates: Username[] = [];
+
+        for (const conn of Object.keys (this.connections)) {
+            if (!conn.includes (name)) {
+                continue;
+            }
+
+            const names = conn.split ("&");
+            mates.push (names[0] == name ? names[1]:names[0]);
+        }
+
+        return mates;
+    }
+
+
+    apply_state_by_name (old_state: State3, name: Username) {
+        for (const conn of Object.keys (old_state.connections))
+            if (conn.includes (name))
+                this.connections[conn] = true;
+
+        for (const conn of Object.keys (old_state.invitations))
+            if (conn.includes (name))
+                this.connections[conn] = true;
+    }
+
+
+    private request(
+        obj: { [key: string]: Boolean }, 
+        key1: string, 
+        key2: string
+    ): [{ [key: string]: Boolean }, string] {
+        const key = `${key1}->${key2}`;
+        const rev_key = `${key2}->${key1}`;
+        
+        if (key in obj) {
+            return [obj, "already_requested"];
+        }
+    
+        if (rev_key in obj) {
+            this.connections[`${key1}/${key2}`] = this.new_conn_state;
+            delete obj[rev_key];
+            return [obj, "accepted"];
+        }
+    
+        else {
+            obj[key] = true;
+            return [obj, "pending"];
+        }
+    }
+}
+
+
+
 
 export function init_active_users(_io: Server) {
     io = _io;

@@ -1,6 +1,6 @@
 import { Game, GameID, Username } from "../../shared/types";
 import { Server, Socket } from "socket.io";
-import { emit_to, is_player_online, Responder } from "./active_users";
+import { ActiveUsers, emit_to, is_player_online, Responder, State3 } from "./active_users";
 import { check_if_it_already_exists, _request } from "./friends";
 import { Chess } from "../../CSM/dist/src/chess"
 
@@ -11,13 +11,35 @@ var games: { [key: string]: Game; } = {};
 
 let users_in_games: { [key: Username]: GameID } = {}
 
+let state = new State3 ("games", {
+    subscribed: [],
+    state: "",
+})
+
 
 export class Games {
+    
+
+    static init () {
+
+        ActiveUsers.subscribe_to_join_event ((sid, username) => {
+            
+            
+        });
+        
+
+        ActiveUsers.subscribe_to_disconnect_event ((sid, username, offline) => {
+            
+
+        });
+    }
+    
+    
     static route (route: string, socket: Socket, username: Username) {
         let portal = new Responder (socket, route);
 
         portal
-            .on ("invite", (player_name, answer) => {
+            .on ("_invite", (player_name, answer) => {
                 if (!player_name) {
                     return;
                 }
@@ -44,9 +66,62 @@ export class Games {
                         break;
                 }
             })
-        .on ("get", () => {
-            send_state (username, username);
-        })
+            .on ("invite", (target, answer) => {
+                if (!target) return;
+
+                let res = state.handle_interaction (username, target);
+
+                if (res == "accepted") {
+                    game_new (target, username);
+                }
+            })
+
+            .on ("get", () => {
+                send_state (username, username);
+            })
+
+            .on ("move", ( { game_id, move }: { game_id: string, move: string }, answer, fail ) => {
+                // Først tjek om game_id'et overhovedet passer
+                if (!(game_id in games)) {
+                    fail (username, "spillet findes ikke")
+                    return;
+                }
+
+                const game = games[game_id];
+                
+                // Derefter tjek om spilleren er en af dem der spiller.
+                if (game.subscribed[0] != username && game.subscribed[1] != username) {
+                    fail (username, "du er ikke med i spillet")
+                    return;
+                }
+                
+
+                let board = new Chess();
+                let player_color = game.subscribed[0] == username ? "WHITE":"BLACK";
+                
+                if (board.turn != player_color) {
+                    fail (username, "det er ikke din tur")
+                    return;
+                }
+
+                const old_state = game.state;
+
+                let moves = board
+                    .load_pgn (game.state)
+                    .gen ()
+                    .moves
+
+                    
+                if (moves.includes (move)) {
+                    board.move (move);
+                    game.state = board.pgn_string;
+
+                    answer (game.subscribed, [game_id, old_state, move])
+                }
+                else {
+                    fail (username, "trækket findes ikke");
+                }
+            })
     }
 }
 
