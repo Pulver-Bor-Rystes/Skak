@@ -1,0 +1,10 @@
+/Users/rasmusfoldberg/Programmering/pbr/skakk/hello-rocket/target/debug/deps/futures_task-a108898d6c17f10c.rmeta: /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/lib.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/spawn.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/future_obj.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/noop_waker.rs
+
+/Users/rasmusfoldberg/Programmering/pbr/skakk/hello-rocket/target/debug/deps/libfutures_task-a108898d6c17f10c.rlib: /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/lib.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/spawn.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/future_obj.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/noop_waker.rs
+
+/Users/rasmusfoldberg/Programmering/pbr/skakk/hello-rocket/target/debug/deps/futures_task-a108898d6c17f10c.d: /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/lib.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/spawn.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/future_obj.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/noop_waker.rs
+
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/lib.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/spawn.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/future_obj.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/futures-task-0.3.25/src/noop_waker.rs:

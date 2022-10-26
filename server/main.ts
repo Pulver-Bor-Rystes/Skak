@@ -7,9 +7,8 @@ import User from './models/user.model'
 import { Friends, friends_socket, friends_sync } from './socket/friends'
 import { ActiveUsers, emit_to } from './socket/active_users'
 import { lobby_socket } from './socket/lobby'
-import { Games, games_socket } from './socket/games'
+import { Games } from './socket/games'
 
-// test()
 
 
 const { app, io } = init_server(() => {
@@ -33,7 +32,7 @@ type PlayerData = {
 // Socket forbindelser
 io.on('connection', (socket: Socket) => {
 	const sid: string = socket.id
-	let username: string = "";
+	socket.data.username = "";
 
 	
 	// handle login event
@@ -42,29 +41,28 @@ io.on('connection', (socket: Socket) => {
 
 
 		if (resp) {
-			username = (user as User).username;
-			ActiveUsers.join_event (sid, username);
+			socket.data.username = (user as User).username;
+			ActiveUsers.join_event (socket);
 			ActiveUsers.emit_to(sid, 'login_success');
 
 
-			ActiveUsers.route ("au", socket, username);
-			Games.route ("games", socket, username);
-			Friends.route ("friends", socket, username);
+			ActiveUsers.route ("au", socket);
+			Games.route ("games", socket);
+			Friends.route ("friends", socket);
 
-			
-			lobby_socket(socket, username);
-			friends_socket(socket, username);
-			games_socket(socket, username);
+
+			// lobby_socket(socket, username);
+			// friends_socket(socket, username);
 		}
 		else {
 			emit_to(sid, 'login_failure');
 			return;
 		}
 
-		
+
 		// handle disconnect
 		socket.on('disconnect', () => {
-			ActiveUsers.disconnect_event (sid, username);
+			ActiveUsers.disconnect_event (socket);
 
 		});	
 	})
@@ -73,7 +71,7 @@ io.on('connection', (socket: Socket) => {
 
 // Basic request
 app.get('/', (req: Request, res: Response) => {
-	res.redirect('/test/oversigt')
+	res.redirect('/home')
 })
 
 

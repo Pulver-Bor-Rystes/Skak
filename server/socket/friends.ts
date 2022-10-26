@@ -37,8 +37,9 @@ export class Friends {
     }
     
     
-    static route (route: string, socket: Socket, username: Username) {
-        let portal = new Responder (socket, route);
+    static route(route: string, socket: Socket) {
+        const username = socket.data.username;
+        const portal = new Responder(socket, route);
 
         portal
             .on ("_request", (player_name, answer, fail) => {

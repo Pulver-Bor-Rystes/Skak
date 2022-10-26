@@ -69,8 +69,11 @@ export class ActiveUsers {
         }
     }
 
-    
-    static join_event (sid: string, username: Username) {
+    /** Når spilleren joiner, logges det her */
+    static join_event (socket: Socket) {
+        const username = socket.data.username;
+        const sid = socket.id;
+        
         if (!(username in users)) {
             users[username] = [];
         }
@@ -78,14 +81,16 @@ export class ActiveUsers {
         users[username].push(sid);
         sid_to_username[sid] = username;
 
+        // Lader alle andre vide at nu er spilleren online
         for (let callback of join_event_callbacks) {
             callback (sid, username);
         }
     }
 
-
-    static disconnect_event (sid: string, username: Username) {
-        console.log ("disconnecting:", username)
+    /** Når spilleren disconnecter, logges det her */
+    static disconnect_event(socket: Socket) {
+        const username = socket.data.username;
+        const sid = socket.id;
 
         if (username in users) {
             let is_offline = false;
@@ -101,7 +106,9 @@ export class ActiveUsers {
             console.log (`${username} disconnected and is now: ${is_offline ? 'offline':'still online :)'}`)
 
 
-            
+            // Lader alle andre vide at spilleren er logget af.
+            // Men da en spiller kan være logget på samtidigt flere steder, videregiver vi også variablen is_offline,
+            // så programmet ved om spilleren er helt offline, eller om der stadig er en browser logget på.
             for (let callback of disconnect_event_callbacks) {
                 callback (sid, username, is_offline);
             }
@@ -122,8 +129,9 @@ export class ActiveUsers {
 
 
 
-    static route (route: string, socket: Socket, username: Username) {
-        let portal = new Responder (socket, route);
+    static route (route: string, socket: Socket) {
+        const username = socket.data.username;
+        const portal = new Responder (socket, route);
 
         portal
             .on ("test", (data, answer) => {

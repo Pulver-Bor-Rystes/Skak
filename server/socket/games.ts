@@ -16,10 +16,7 @@ let state = new State3 ("games", {
     state: "",
 })
 
-
 export class Games {
-    
-
     static init () {
 
         ActiveUsers.subscribe_to_join_event ((sid, username) => {
@@ -35,37 +32,11 @@ export class Games {
     }
     
     
-    static route (route: string, socket: Socket, username: Username) {
-        let portal = new Responder (socket, route);
+    static route(route: string, socket: Socket) {
+        const username = socket.data.username;
+        const portal = new Responder(socket, route);
 
         portal
-            .on ("_invite", (player_name, answer) => {
-                if (!player_name) {
-                    return;
-                }
-        
-                if (check_if_it_already_exists(games, [player_name, username])) {
-                    answer (username, "already_in_game");
-                    return;
-                }
-        
-                let res: string;
-                [invitations, res] = _request(invitations, username, player_name);
-        
-                switch (res) {
-                    case "accepted":
-                        send_state([username, player_name], [username, player_name]);
-                        game_new(username, player_name);
-                        break;
-        
-                    case "pending":
-                        send_state([username, player_name], [username, player_name]);
-                        break;
-        
-                    default:
-                        break;
-                }
-            })
             .on ("invite", (target, answer) => {
                 if (!target) return;
 
@@ -75,6 +46,26 @@ export class Games {
                     game_new (target, username);
                 }
             })
+
+            // Klienten skal kunne hente et spils 'state'
+            // Det kan gøres på forskellige måder
+            // 1. Der skal hentes ét spil
+            //     Spil opdateres forskelligt, og de bør derfor opdateres forskelligt.
+            // 2. Hent alle spil, 
+
+            .on("get_game", ({ gid }, answer, fail) => {
+                if (games[gid]) {
+                    fail(username, "invalid game id")
+                }
+
+                if (games[gid].subscribed.includes(username)) {
+                    answer(username, games[gid])
+                }
+                else {
+                    fail(username, "Not allowed to watch")
+                }
+            })
+
 
             .on ("get", () => {
                 send_state (username, username);
@@ -126,34 +117,6 @@ export class Games {
 }
 
 
-
-export function games_socket(socket: Socket, username: string) {
-    socket.on("games/state", (game_id: GameID) => {
-        if (game_id in games) {
-            emit_to(socket.id, "res:games/state", games[game_id]);
-        }
-    })
-
-
-    socket.on("games/move", (game_id: string, move, pgn_before: string) => {
-        if (game_id in games) {
-            let temp_board = new Chess();
-
-            let moves = temp_board
-                .load_pgn (pgn_before)
-                .gen ()
-                .moves
-
-            temp_board.move(move);
-
-            temp_board.log()
-
-            if (moves.includes (move)) {
-                emit_to(games[game_id].subscribed, "notif:games/move", [game_id, pgn_before, move])
-            }
-        }
-    })
-}
 
 
 function send_state(send_to: string | string[], username: string | string[]) {

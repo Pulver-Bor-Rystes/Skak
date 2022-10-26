@@ -18,6 +18,7 @@ import { user_info } from '../routes/v1/user_info.router'
 
 // Interfaces / Types
 import User from '../models/user.model'
+import { Username } from 'shared/types'
 
 
 genereate_files()
@@ -26,6 +27,10 @@ genereate_files()
 type init_return = {
 	app: Application
 	io: Server
+}
+
+interface SocketData {
+	username: Username;
 }
 
 
@@ -63,7 +68,7 @@ export function init_server(db_ready_callback: Function): init_return {
 
 
 	const server = app.listen(port)
-	const io: Server = new Server(server, { serveClient: true })
+	const io: Server = new Server<SocketData>(server, { serveClient: true })
 	if (Boolean(env.enable_hotreload))
 		hotreload_init(io, [
 			// 'web/compiled',

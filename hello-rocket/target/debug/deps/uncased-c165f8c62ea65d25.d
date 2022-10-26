@@ -1,0 +1,11 @@
+/Users/rasmusfoldberg/Programmering/pbr/skakk/hello-rocket/target/debug/deps/uncased-c165f8c62ea65d25.rmeta: /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/lib.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/serde.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/owned.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/borrowed.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/as_uncased.rs
+
+/Users/rasmusfoldberg/Programmering/pbr/skakk/hello-rocket/target/debug/deps/libuncased-c165f8c62ea65d25.rlib: /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/lib.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/serde.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/owned.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/borrowed.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/as_uncased.rs
+
+/Users/rasmusfoldberg/Programmering/pbr/skakk/hello-rocket/target/debug/deps/uncased-c165f8c62ea65d25.d: /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/lib.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/serde.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/owned.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/borrowed.rs /Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/as_uncased.rs
+
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/lib.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/serde.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/owned.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/borrowed.rs:
+/Users/rasmusfoldberg/.cargo/registry/src/github.com-1ecc6299db9ec823/uncased-0.9.7/src/as_uncased.rs:
