@@ -27,6 +27,7 @@
     "@rollup/plugin-commonjs": "^23.0.0",
     "@rollup/plugin-json": "^5.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
-    "rollup": "^3.2.0"
+    "rollup": "^3.2.0",
+    "socket.io-client": "^4.5.3"
   }
 }

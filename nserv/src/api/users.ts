@@ -1,5 +1,5 @@
 import { Database } from "./database"
-import { HashInfo, HashSettings, Security } from "./Security"
+import { HashInfo, HashSettings, Security } from "./security"
 
 interface dbUser {
   user_id: number
@@ -20,6 +20,9 @@ interface dbCookie {
 
 
 export class Users {
+  static socket_ids = new Map<string, string>
+  
+  
   static async login(username: string, password: string) {
     let valid_inputs = Security.check_inputs([
       {
@@ -51,7 +54,9 @@ export class Users {
 
     
     for (const cookie of cookies) {
-       let settings: HashSettings = {
+      console.log(cookie)
+
+      let settings: HashSettings = {
         digest: cookie.digest,
         iterations: cookie.iterations,
         keylen: cookie.keylen,
@@ -144,6 +149,20 @@ export class Users {
     // 4. Giv cookie til brugeren
     
     return cookie_h.original
+  }
+  
+  
+  
+  static register_socket_id(socket_id: string, username: string) {
+    this.socket_ids.set(username, socket_id)
+  }
+  
+  static socket_id(username: string) {
+    let sid = this.socket_ids.get(username)
+    if (sid) {
+      return sid
+    }
+    return false
   }
   
 

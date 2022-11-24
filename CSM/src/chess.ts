@@ -174,7 +174,7 @@ export class Chess {
     load_pgn (pgn_string: string) {
         let parts = pgn_string.split (". ");
         parts.shift()
-        console.log(parts)
+        // console.log(parts)
         this.load_fen ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
         this.gen ();

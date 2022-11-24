@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import { Server as SocketServer, Socket } from 'socket.io';
 import cors from 'cors';
 import fs from 'fs';
+import { Users } from "./api/users"
 
 declare module 'socket.io' {
     export interface Socket {
@@ -11,12 +12,16 @@ declare module 'socket.io' {
 }
 
 interface SocketRequest {
-  topic: string;
+  socket: Socket;
 
   /**Sender et svar tilbage til den pågælende klient */
   reply_sid: (data) => void;
   // reply_user: (data) => void
   // broadcast: (data) => void
+  ok_sid: (data) => void;
+  err_sid: (data) => void;
+  ok: (data) => void;
+  err: (data) => void;
 }
 
 export class Server {
@@ -56,28 +61,72 @@ export class Server {
     io.on('connection', (socket) => {
       socket.username = false; // not logged in
 
-      // går igennem alle predefinerede hooks
-      for (const top of this.topics) {
-        let topic = top[0];
-        let response_str = `/${topic}`;
+      try {
+        socket.on("login", (data) => {
+          Users.login(data["username"], data["password"])
+            .then(cookie => {
+              socket.emit("/login", { ok: true, data: cookie })
+              socket.username = data["username"] as string
+            
+              Users.register_socket_id(socket.id, socket.username)
+            
+              // går igennem alle predefinerede hooks
+              for (const top of this.topics) {
+                let topic = top[0];
+                let response_str = `/${topic}`;
+                let err_resp_str = `#${response_str}`
 
-        // laver en socket.on event, og smider data videre til hook'en sammen med nogle hjælpe
-        // funktioner der skal gøre det nemmere at kommunikerere med resten af de aktive klienter
-        socket.on(top[0], (data) => {
-          top[1](
-            {
-              topic,
-              reply_sid(data) {
-                console.log('replying with data');
-                socket.emit(response_str, data);
-              },
-            },
-            data
-          );
-        });
+                // laver en socket.on event, og smider data videre til hook'en sammen med nogle hjælpe
+                // funktioner der skal gøre det nemmere at kommunikerere med resten af de aktive klienter
+                console.log("Registering topic:", topic)
+                socket.on(topic, (data) => {
+                  top[1](
+                    {
+                      socket,
+                      reply_sid(data) {
+                        console.log('replying with data');
+                        socket.emit(response_str, data);
+                      },
+                      ok_sid(data) {
+                        socket.emit(response_str, {
+                          ok: true,
+                          data
+                        })
+                      },
+                      err_sid(err) {
+                        socket.emit(err_resp_str, {
+                          ok: false,
+                          err
+                        })
+                      },
+                      ok(data) {
+                        socket.emit(response_str, {
+                          ok: true,
+                          data
+                        })
+                      },
+                      err(err) {
+                        socket.emit(err_resp_str, {
+                          ok: false,
+                          err
+                        })
+                      },
+                    },
+                    data
+                  );
+                });
+              }
+            })
+            .catch(err => {
+              socket.emit("/login", { ok: false, err })
+            })
+        })
+      }
+      catch (err) {
+        console.error(" > connection/login/?", err)
       }
 
-      socket.emit('ping');
+      socket.emit('ping', "data here");
     });
   }
 
@@ -86,5 +135,19 @@ export class Server {
     callback: (request: SocketRequest, data: any) => void
   ) {
     this.topics.set(topic, callback);
+  }
+  
+  
+  static notify(
+    user_list: string[],
+    topic: string,
+    data: any
+  ) {
+    for (let username of user_list) {
+      let sid = Users.socket_id(username)
+      if (sid) {
+        this.io.to(sid).emit(topic, data)
+      }
+    }
   }
 }
