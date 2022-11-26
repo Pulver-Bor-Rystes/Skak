@@ -2,6 +2,8 @@
 
 .DS_Store
 
+web/.svelte-kit
+**/*/mydb.sqlite
 ideas.md
 **/*/config/
 CSM/index.js

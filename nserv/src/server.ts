@@ -100,16 +100,20 @@ export class Server {
                         })
                       },
                       ok(data) {
-                        socket.emit(response_str, {
+                        Server.notify([socket.username || ""], response_str, {
                           ok: true,
                           data
                         })
                       },
                       err(err) {
-                        socket.emit(err_resp_str, {
+                        Server.notify([socket.username || ""], response_str, {
                           ok: false,
                           err
                         })
+                        // socket.emit(err_resp_str, {
+                        //   ok: false,
+                        //   err
+                        // })
                       },
                     },
                     data
@@ -121,10 +125,15 @@ export class Server {
               socket.emit("/login", { ok: false, err })
             })
         })
+        socket.on("disconnect", () => {
+          Users.remove_socket_id(socket.id, socket.username)
+        })
       }
       catch (err) {
         console.error(" > connection/login/?", err)
       }
+      
+      
 
       socket.emit('ping', "data here");
     });
@@ -144,10 +153,13 @@ export class Server {
     data: any
   ) {
     for (let username of user_list) {
-      let sid = Users.socket_id(username)
-      if (sid) {
-        this.io.to(sid).emit(topic, data)
-      }
+      let sids = Users.get_socket_ids(username)
+      sids.forEach(sid => {
+        this.io.to(sid).emit(topic, {
+          ok: true,
+          data
+        })
+      })
     }
   }
 }

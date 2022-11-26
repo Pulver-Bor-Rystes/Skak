@@ -2,6 +2,7 @@
 import { Server } from "../server"
 import { Security } from "../api/security"
 import { Chess } from "../../../CSM/dist/src/chess"
+import { Invite } from "./invites"
 
 
 interface Game {
@@ -16,11 +17,12 @@ interface Game {
 
 export class Games {
   static games: Map<string, Game> = new Map
+  static invite = new Invite()
   
-  
+
   static init() {
-    Server.on("invite", (req, data) => {
-      Invite.new(data["from"], data["to"])
+    Server.on("invite", (req, { from, to }) => {
+      this.invite.new(from, to)
         .then(res => req.ok_sid(res))
         .catch(err => req.err_sid(err))
     })
@@ -94,95 +96,3 @@ export class Games {
   }
 }
 
-
-
-interface Invitation {
-  to: string
-  from: string
-  in_game: boolean
-}
-
-
-export class Invite {
-  static invites = new Map<string, Invitation>
-  
-
-  static async new(from, to) {
-    let valid_inputs = Security.check_inputs([
-      {
-        type: "username",
-        val: from
-      },
-      {
-        type: "username",
-        val: to
-      }
-    ])
-    
-    if (!valid_inputs.ok) {
-      throw valid_inputs.error
-    }
-    
-    
-    if (from == to) {
-      throw "Cannot invite same user"
-    }
-    
-    
-    // hvis invitationen endnu ikke er der
-    let invitation = this.get(from, to)
-    
-    
-    if (invitation) {
-      if (invitation.to == from && !invitation.in_game) {
-        // start spil
-        invitation.in_game = true
-        let white = Games.new(from, to)
-        return white
-      }
-      
-      
-      if (invitation.in_game) {
-        throw "Game is already in progress"
-      }
-      throw "Already invited" // ignorer
-    }
-    
-    let invi: Invitation = {
-      to,
-      from,
-      in_game: false
-    }
-    
-    this.invites.set(this.key(from, to), invi)
-    
-    
-    setTimeout(() => {
-      // fjern invitationen igen, hvis den stadig findes
-      let old_invi = this.get(from, to)
-
-      if (old_invi && !old_invi.in_game) {
-        this.invites.delete(this.key(from, to))
-      }
-    }, 1000*60) // sletter invitationen efter 1 min
-  
-    
-    return true
-  }
-  
-  
-  static get(from, to) {
-    const key = this.key(from, to)
-
-    if (this.invites.has(key)) {
-      return this.invites.get(key)
-    }
-
-    return false
-  }
-  
-  
-  static key(val1, val2) {
-    return [val1, val2].sort().join(":")
-  }
-}

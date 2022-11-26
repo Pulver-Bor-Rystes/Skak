@@ -1,4 +1,6 @@
+import { Server } from "../server"
 import { Database } from "./database"
+import { Invite } from "./invites"
 import { HashInfo, HashSettings, Security } from "./security"
 
 interface dbUser {
@@ -21,6 +23,57 @@ interface dbCookie {
 
 export class Users {
   static socket_ids = new Map<string, string>
+  static online = new Map<string, string[]> // key: username, val: socket id's
+  static invite = new Invite
+  
+
+  static init() {
+    Server.on("search", (req, { str }) => {
+      Users.search(str)
+        .then(res => req.ok(res))
+        .catch(err => req.err(err))
+    })
+    
+    Server.on("add_friend", (req, { username }) => {
+      this.invite.new(req.socket.username, username)
+        .then(res => req.ok(res))
+        .catch(err => req.err_sid(err))
+    })
+  }
+  
+  
+  static async search(str: string) {
+    let iterator = Users.online.keys()
+    let done = false
+    let results: string[] = []
+    
+    
+    while (!done) {
+      let iterated = iterator.next()
+      done = iterated.done || false
+      if (done) break
+      if (iterated.value.includes(str)) {
+        results.push(iterated.value)
+      }
+    }
+    
+    return results
+  }
+  
+  
+  static async is_online(username: string) {
+    if (!this.online.has(username)) {
+      throw "User is not online"
+    }
+    
+    return "user is online"
+  }
+  
+  
+  static async register(username: string, socket_id) {
+    
+  }
+  
   
   
   static async login(username: string, password: string) {
@@ -54,8 +107,6 @@ export class Users {
 
     
     for (const cookie of cookies) {
-      console.log(cookie)
-
       let settings: HashSettings = {
         digest: cookie.digest,
         iterations: cookie.iterations,
@@ -79,7 +130,7 @@ export class Users {
   
     if (logged_in_with_psw) {
       let new_cookie = Security.hash()
-      this.#insert_cookie(user.user_id, new_cookie)
+      await this.#insert_cookie(user.user_id, new_cookie)
       this.#clean_cookies(user.user_id)
       return new_cookie.original
     }
@@ -131,38 +182,45 @@ export class Users {
     this.#insert_cookie(user.user_id, cookie_h)
     this.#insert_cookie(user.user_id, psw_h, true) // skriver true, fordi det er brugerens kodeord
     
-    // Database.db.serialize(() => {
-    //   // 1. insert into user db
-    //   Database.db.run("INSERT INTO user (username) VALUES($username)", {
-    //     $username: username
-    //   })
-      
-    
-    //   // 2. indsætter psw og cookie
-    //   Database.db.each("SELECT user_id FROM user WHERE username = ?", username, (err, row) => {
-    //     if (!err) {
-    //       this.#insert_cookie(row.user_id, cookie_h)
-    //       this.#insert_cookie(row.user_id, psw_h, true) // skriver true, fordi det er kodeord
-    //     }
-    //   })
-    // })
-    // 4. Giv cookie til brugeren
-    
     return cookie_h.original
   }
   
   
   
-  static register_socket_id(socket_id: string, username: string) {
-    this.socket_ids.set(username, socket_id)
+  static register_socket_id(socket_id: string, username: string | false) {
+    username = username || ""
+    let online_user = this.online.get(username)
+    
+    if (online_user === undefined) {
+      this.online.set(username, [socket_id])
+    }
+    else {
+      online_user.push(socket_id)
+      this.online.set(username, online_user)
+    }
   }
   
-  static socket_id(username: string) {
-    let sid = this.socket_ids.get(username)
-    if (sid) {
-      return sid
+  
+  static remove_socket_id(socket_id: string, username: string | false) {
+    username = username || ""
+    let online_user = this.online.get(username)
+    
+    if (online_user === undefined) {
+      return false
     }
-    return false
+    
+    online_user.splice(online_user.indexOf(socket_id), 1)
+    this.online.set(username, online_user)
+    return true
+  }
+
+  
+  static get_socket_ids(username: string | false) {
+    let sids = this.online.get(username || "")
+    if (sids) {
+      return sids
+    }
+    return []
   }
   
 
@@ -179,7 +237,7 @@ export class Users {
     // vi sletter kun gamle cookies, så fremt der er noget at slette :)
     let newest_allowed_date = all_cookies[overflow_count].last_used
     
-    await Database.run("DELETE FROM cookie WHERE user_id = $user_id AND last_used != -1 AND last_used > $end_date", {
+    await Database.run("DELETE FROM cookie WHERE user_id = $user_id AND last_used != -1 AND last_used < $end_date", {
       $user_id: user_id,
       $end_date: newest_allowed_date
     })
@@ -196,17 +254,20 @@ export class Users {
   }
   
 
-  static async #insert_cookie(user_id, cookie: HashInfo, is_psw = false) {
-    await Database.run("INSERT INTO cookie (hashed_string, salt, keylen, iterations, digest, user_id, last_used) VALUES($hashed_string, $salt, $keylen, $iterations, $digest, $user_id, $last_used)", {
-      $hashed_string: cookie.hash,
-      $salt: cookie.settings.salt,
-      $keylen: cookie.settings.keylen,
-      $iterations: cookie.settings.iterations,
-      $digest: cookie.settings.digest,
-      $user_id: user_id,
-      $last_used: is_psw ? -1:Date.now()
+  static #insert_cookie(user_id, cookie: HashInfo, is_psw = false) {
+    return new Promise(async (resolve, reject) => {
+      await Database.run("INSERT INTO cookie (hashed_string, salt, keylen, iterations, digest, user_id, last_used) VALUES($hashed_string, $salt, $keylen, $iterations, $digest, $user_id, $last_used)", {
+        $hashed_string: cookie.hash,
+        $salt: cookie.settings.salt,
+        $keylen: cookie.settings.keylen,
+        $iterations: cookie.settings.iterations,
+        $digest: cookie.settings.digest,
+        $user_id: user_id,
+        $last_used: is_psw ? -1:Date.now()
+      })
+        .then(() => resolve(true))
+        .catch(err => reject("#insert_cookie: " + err))
     })
-      .catch(err => { throw "#insert_cookie: " + err })
   }
   
 

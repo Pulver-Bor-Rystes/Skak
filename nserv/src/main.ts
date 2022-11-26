@@ -1,7 +1,8 @@
 import { Database } from './api/database';
 import { Users } from './api/users';
 import { Server } from './server';
-import { Games, Invite } from "./api/games"
+import { Games } from "./api/games"
+import { Invite } from './api/invites';
 
 Server.on('ping', (req, data) => {
   console.log('\nreceived topic: ping');
@@ -16,6 +17,17 @@ console.clear()
 console.log("Det kører sgu")
 
 let key = Invite.key("rasmus", "emil")
+
+Users.login("rasmus", "QBdmc1rMK532EkHYqmziVgVfnnYi4l2GFwxBg15C2u65Ibrpi9E0GiXArGlzLLnj")
+  .then(cookie => {
+    console.log(cookie)
+    Users.login("rasmus", cookie as string)
+      .then(cookie2 => { console.log(cookie, cookie2, cookie == cookie2)})
+      .catch(err => console.log("2.", err))
+  })
+  .catch(err => console.log("1.", err))
+
+
 
 // Invite.new("rasmus", "VrQMTGnxFKbaigfJidXohm1oFE4ie3VtLz7agoC7dG5OrFNyAtzOciJawlWGlJnJ")
 //   .then(res => console.log("1r:", res))
