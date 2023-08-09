@@ -2,10 +2,11 @@ use actix::{Actor, StreamHandler};
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, get, Responder};
 use actix_web_actors::ws;
 
-mod users;
+mod user_mod;
 mod security;
 mod tests;
 
+use crate::user_mod::users;
 
 // use crate::security::HashedPassword;
 

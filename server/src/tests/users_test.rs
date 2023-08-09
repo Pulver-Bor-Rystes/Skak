@@ -4,14 +4,14 @@ const PSW: &str = "kodeord1234";
 
 #[cfg(test)]
 mod signup {
-    use crate::{users, tests::users_test::{USR, PSW}};
+    use crate::{users, tests::users_test::{USR, PSW}, user_mod::types::*};
 
     #[test]
     fn username_taken() {
         users::reset();
         let _ = users::signup(USR, "kodeord123");
         let res = users::signup(USR, PSW);
-        assert_eq!(res, Err(users::SignupError::UsernameTaken));
+        assert_eq!(res, Err(SignupError::UsernameTaken));
     }
 
     #[test]
@@ -25,35 +25,35 @@ mod signup {
     fn username_too_short() {
         users::reset();
         let res = users::signup("ra", "kodeord123");
-        assert_eq!(res, Err(users::SignupError::UsernameTooShort))
+        assert_eq!(res, Err(SignupError::UsernameTooShort))
     }
 
     #[test]
     fn username_too_long() {
         users::reset();
         let res = users::signup("rasmusrasmusrasmusrasmusrasmusrasmus123", "kodeord123");
-        assert_eq!(res, Err(users::SignupError::UsernameTooLong))
+        assert_eq!(res, Err(SignupError::UsernameTooLong))
     }
 
     #[test]
     fn psw_too_short() {
         users::reset();
         let res = users::signup(USR, "1231");
-        assert_eq!(res, Err(users::SignupError::PasswordTooShort))
+        assert_eq!(res, Err(SignupError::PasswordTooShort))
     }
 
     #[test]
     fn psw_too_long() {
         users::reset();
         let res = users::signup(USR, "kodeord1kodeord1kodeord1kodeord123kodeord1kodeord1kodeord1kodeord123kodeord1kodeord1kodeord1kodeord123");
-        assert_eq!(res, Err(users::SignupError::PasswordTooLong))
+        assert_eq!(res, Err(SignupError::PasswordTooLong))
     }
 }
 
 
 #[cfg(test)]
 mod login {
-    use crate::{users, tests::users_test::{PSW, USR}};
+    use crate::{users, tests::users_test::{PSW, USR}, user_mod::types::*};
 
     #[test]
     fn with_psw() {
@@ -81,7 +81,7 @@ mod login {
         users::reset();
         let res = users::login(USR, PSW);
 
-        assert_eq!(res, Err(users::LoginError::UsernameNotFound))
+        assert_eq!(res, Err(LoginError::UsernameNotFound))
     }
     #[test]
     fn wrong_psw() {
@@ -90,6 +90,6 @@ mod login {
             .expect("Failed to signup");
 
         let res = users::login(USR, "asdbsd");
-        assert_eq!(res, Err(users::LoginError::WrongPassword))
+        assert_eq!(res, Err(LoginError::WrongPassword))
     }
 }
