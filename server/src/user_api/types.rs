@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use crate::security;
-
+use random_string::generate;
 
 pub const USERS_PATH: &str = "./users.json";
-
+const COOKIE_LENGTH: usize = 32;
+const COOKIE_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Cookie {
@@ -16,10 +17,13 @@ pub struct Cookie {
 impl Cookie {
     // makes a new cookie with a default value
     pub fn new() -> (Cookie, String) {
-        let str = "cookie".to_string();
+        let str = generate(COOKIE_LENGTH, COOKIE_CHARSET); // TODO! make this random
+
+        let mut cookie = Cookie::password(&str);
+        cookie.is_password = false;
         
         return (
-            Cookie::password(&str),
+            cookie,
             str
         )
     }
@@ -46,7 +50,7 @@ pub struct User {
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum LoginError {
     UsernameNotFound,
     WrongPassword,
@@ -58,7 +62,7 @@ pub enum LoginSuccess {
     LoggedIn,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum SignupError {
     UsernameTaken,
     UsernameTooShort,

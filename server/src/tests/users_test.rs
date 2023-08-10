@@ -4,48 +4,51 @@ const PSW: &str = "kodeord1234";
 
 #[cfg(test)]
 mod signup {
-    use crate::{users, tests::users_test::{USR, PSW}, user_mod::types::*};
+    use crate::tests::users_test::{USR, PSW};
+    use crate::user_api::auth::LoginPayload;
+    use crate::user_api::types::*;
+    use crate::user_api::*;
 
     #[test]
     fn username_taken() {
-        users::reset();
-        let _ = users::signup(USR, "kodeord123");
-        let res = users::signup(USR, PSW);
+        auth::reset();
+        let _ = auth::signup(LoginPayload::new(USR, "kodeord123"));
+        let res = auth::signup(LoginPayload::new(USR, PSW));
         assert_eq!(res, Err(SignupError::UsernameTaken));
     }
 
     #[test]
     fn signup() {
-        users::reset();
-        let res = users::signup(USR, PSW);
+        auth::reset();
+        let res = auth::signup(LoginPayload::new(USR, PSW));
         assert_eq!(res.is_ok(), true)
     }
 
     #[test]
     fn username_too_short() {
-        users::reset();
-        let res = users::signup("ra", "kodeord123");
+        auth::reset();
+        let res = auth::signup(LoginPayload::new("ra", "kodeord123"));
         assert_eq!(res, Err(SignupError::UsernameTooShort))
     }
 
     #[test]
     fn username_too_long() {
-        users::reset();
-        let res = users::signup("rasmusrasmusrasmusrasmusrasmusrasmus123", "kodeord123");
+        auth::reset();
+        let res = auth::signup(LoginPayload::new("rasmusrasmusrasmusrasmusrasmusrasmus123", "kodeord123"));
         assert_eq!(res, Err(SignupError::UsernameTooLong))
     }
 
     #[test]
     fn psw_too_short() {
-        users::reset();
-        let res = users::signup(USR, "1231");
+        auth::reset();
+        let res = auth::signup(LoginPayload::new(USR, "1231"));
         assert_eq!(res, Err(SignupError::PasswordTooShort))
     }
 
     #[test]
     fn psw_too_long() {
-        users::reset();
-        let res = users::signup(USR, "kodeord1kodeord1kodeord1kodeord123kodeord1kodeord1kodeord1kodeord123kodeord1kodeord1kodeord1kodeord123");
+        auth::reset();
+        let res = auth::signup(LoginPayload::new(USR, "kodeord1kodeord1kodeord1kodeord123kodeord1kodeord1kodeord1kodeord123kodeord1kodeord1kodeord1kodeord123"));
         assert_eq!(res, Err(SignupError::PasswordTooLong))
     }
 }
@@ -53,43 +56,52 @@ mod signup {
 
 #[cfg(test)]
 mod login {
-    use crate::{users, tests::users_test::{PSW, USR}, user_mod::types::*};
+    use crate::user_api::auth::LoginPayload;
+    use crate::user_api::types::*;
+    use crate::user_api::*;
+
+    use super::{USR, PSW};
 
     #[test]
     fn with_psw() {
-        users::reset();
-        users::signup(USR, PSW)
+        auth::reset();
+        auth::signup(LoginPayload::new(USR, PSW))
             .expect("Failed to signup");
 
-        let res = users::login(USR, PSW);
+        let res = auth::login(LoginPayload::new(USR, PSW));
         
-        assert_eq!(res.is_ok(), true);
+        if res.is_err() {
+            assert_eq!(res, Ok(LoginSuccess::LoggedIn))
+        }
+        else {
+            assert!(res.is_ok())
+        }
     }
 
     #[test]
     fn with_cookie() {
-        users::reset();
-        let cookie = users::signup(USR, PSW)
+        auth::reset();
+        let cookie = auth::signup(LoginPayload::new(USR, PSW))
             .expect("Failed to signup");
 
-        let res = users::login(USR, &cookie);
+        let res = auth::login(LoginPayload::new(USR, &cookie));
         assert_eq!(res.is_ok(), true);
     }
 
     #[test]
     fn no_user() {
-        users::reset();
-        let res = users::login(USR, PSW);
+        auth::reset();
+        let res = auth::login(LoginPayload::new(USR, PSW));
 
         assert_eq!(res, Err(LoginError::UsernameNotFound))
     }
     #[test]
     fn wrong_psw() {
-        users::reset();
-        let cookie = users::signup(USR, PSW)
+        auth::reset();
+        let _ = auth::signup(LoginPayload::new(USR, PSW))
             .expect("Failed to signup");
 
-        let res = users::login(USR, "asdbsd");
+        let res = auth::login(LoginPayload::new(USR, "asdbsd"));
         assert_eq!(res, Err(LoginError::WrongPassword))
     }
 }

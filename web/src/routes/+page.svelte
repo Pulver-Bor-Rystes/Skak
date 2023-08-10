@@ -1,2 +1,14 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+
+    const { log } = console;
+    import { onMount } from "svelte";
+    import { socket } from "../networking/ws";
+    
+    $socket.on("page", (data) => {
+        log("page:", data);
+    })
+    
+</script>
+
+
+<h1> Skak </h1>

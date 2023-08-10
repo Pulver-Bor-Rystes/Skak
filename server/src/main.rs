@@ -1,63 +1,40 @@
-use actix::{Actor, StreamHandler};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, get, Responder};
-use actix_web_actors::ws;
-
-mod user_mod;
-mod security;
-mod tests;
-
-use crate::user_mod::users;
-
-// use crate::security::HashedPassword;
-
 const PORT: u16 = 4000;
 
-/// Define HTTP actor
-struct MyWs;
 
-impl Actor for MyWs {
-    type Context = ws::WebsocketContext<Self>;
-}
+// Add HttpRequest and HttpResponse
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web_actors::ws;
 
-/// Handler for ws::Message message
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        match msg {
-            Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
-            Ok(ws::Message::Text(text)) => ctx.text(text),
-            Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
-            _ => (),
-        }
-    }
-}
+mod server;
+mod user_api;
+mod security;
+mod com;
+mod tests;
+use self::server::MyWebSocket;
 
-async fn ws_index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let resp = ws::start(MyWs {}, &req, stream);
-    println!("{:?}", resp);
-    resp
-}
-
-
-#[get("/")]
-async fn index(req_body: String) -> impl Responder {
+async fn index() -> impl Responder {
     HttpResponse::Ok()
         .content_type("text/html")
         .body("<h1>Hej Rasmus</h1>")
 }
 
-
+// WebSocket handshake and start `MyWebSocket` actor.
+async fn websocket(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+    ws::start(MyWebSocket::new(), &req, stream)
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    println!("running server on port {}", PORT);
+    println!("starting HTTP server at http://localhost:4000");
 
-    let res = users::signup("rasmus", "1234");
-    println!("{:?}", res);
-
-    HttpServer::new(|| App::new()
-        .route("/ws/", web::get().to(ws_index))
-        .service(index)
-    )
+    HttpServer::new(|| {
+        App::new()
+            .service(web::resource("/").to(index))
+            // Add the WebSocket route
+            .service(web::resource("/api/ws").route(web::get().to(websocket)))
+            .wrap(middleware::Logger::default())
+    })
+    .workers(2)
     .bind(("127.0.0.1", PORT))?
     .run()
     .await
