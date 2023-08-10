@@ -38,6 +38,13 @@ class Socket {
             }
 
             let handled = false;
+
+            // make an error if topic contains "no topic"
+            if (data.topic == "no topic") {
+                console.error("server responded with topic: 'no topic' - Check your request\n", data.data)
+                handled = true
+            }
+
             
             // iterate over listeners
             this.listeners.forEach((cb, topic) => {

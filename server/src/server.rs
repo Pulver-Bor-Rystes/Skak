@@ -1,14 +1,12 @@
-use std::time::{Duration, Instant};
 use actix::prelude::*;
 use actix_web_actors::ws;
+use std::time::{Duration, Instant};
 
-use crate::user_api;
 use crate::com::{Context, MessageHandler, WSMessage};
-
+use crate::user_api;
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
-
 
 pub struct MyWebSocket {
     hb: Instant,
@@ -44,15 +42,8 @@ impl Actor for MyWebSocket {
     }
 }
 
-
-
-
-
-
-
 // The `StreamHandler` trait is used to handle the messages that are sent over the socket.
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
-
     // The `handle()` function is where we'll determine the response
     // to the client's messages. So, for example, if we ping the client,
     // it should respond with a pong. These two messages are necessary
@@ -71,16 +62,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
             Ok(ws::Message::Text(data)) => {
                 let mut c = Context::new(ctx);
                 let data = data.to_string();
-                
-                user_api::interface::handle(&mut c, &data);
-                
 
+                user_api::interface::handle(&mut c, &data);
 
                 if !c.sent() {
-                    c.send(WSMessage::something_went_wrong())
+                    c.send(WSMessage::something_went_wrong(data))
                 }
                 // ctx.text("{\"topic\": \"page\", \"data\": \"Hej Rasmus\"}")
-            },
+            }
             // Close will close the socket
             Ok(ws::Message::Close(reason)) => {
                 ctx.close(reason);

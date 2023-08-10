@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::MyWebSocket;
 
-
+/// har to felter: topic og data
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct WSMessage<Data = String> {
     pub topic: String,
@@ -12,17 +12,25 @@ pub struct WSMessage<Data = String> {
 
 // Vi har basically to identiske data typer. Dog er den ene ment til at være en fejl besked
 #[derive(Deserialize, Serialize, Debug, Default)]
-struct Success<Data = String> {
+pub struct Success<Data = String> {
     result: bool,
-    data: Data
+    data: Data,
 }
 
 #[derive(Deserialize, Serialize, Debug, Default)]
-struct Failure<Data = String> {
+pub struct Failure<Data = String> {
     result: bool,
-    error: Data
+    error: Data,
 }
 
+impl Failure {
+    pub fn new<T: Serialize>(error: T) -> Failure<T> {
+        Failure {
+            result: false,
+            error,
+        }
+    }
+}
 
 impl WSMessage {
     pub fn ping() -> Self {
@@ -31,25 +39,29 @@ impl WSMessage {
             data: "ping message".to_string(),
         }
     }
-    
-    
-    pub fn something_went_wrong() -> Self {
+
+    pub fn something_went_wrong(data: String) -> WSMessage<Failure<String>> {
+        let parsed: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(&data);
+
+        let mut topic = "no topic".to_string();
+
+        if let Ok(parsed) = parsed {
+            if let Some(parsed_topic) = parsed["topic"].as_str() {
+                topic = parsed_topic.to_owned();
+            }
+        }
+
         WSMessage {
-            topic: "error".to_string(),
-            data: "something went wrong".to_string(),
+            topic: topic.to_string(),
+            data: Failure::new(data),
         }
     }
 }
-
-
-
-
 
 pub struct Context<'a, CTX> {
     ctx: &'a mut CTX,
     sent: bool,
 }
-
 
 // En trait så vi kan videre give en context til en handle funktion
 pub trait MessageHandler {
@@ -58,10 +70,7 @@ pub trait MessageHandler {
     fn ok(&mut self, topic: impl ToString, data: impl Serialize) {
         self.send(WSMessage {
             topic: topic.to_string(),
-            data: Success {
-                result: true,
-                data,
-            }
+            data: Success { result: true, data },
         })
     }
 
@@ -71,7 +80,7 @@ pub trait MessageHandler {
             data: Failure {
                 result: false,
                 error,
-            }
+            },
         })
     }
 }
@@ -79,13 +88,15 @@ pub trait MessageHandler {
 // Hjælpe funktioner
 impl<'a, CTX> Context<'a, CTX> {
     pub fn new(data: &'a mut CTX) -> Self {
-        Context { ctx: data, sent: false }
+        Context {
+            ctx: data,
+            sent: false,
+        }
     }
 
     pub fn serialize(&self, message: impl Serialize) -> String {
         serde_json::to_string(&message).expect("failed to serialize")
     }
-
 
     pub fn sent(&self) -> bool {
         self.sent
