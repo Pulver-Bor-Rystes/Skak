@@ -1,16 +1,22 @@
 const PORT: u16 = 4000;
 
-
 // Add HttpRequest and HttpResponse
-use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix::*;
+use actix_web::{
+    middleware,
+    web::{self, Data},
+    App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use actix_web_actors::ws;
+use communication::{server::Server, session::Session};
 
-mod server;
-mod user_api;
+// mod com;
 mod security;
-mod com;
+// mod server;
 mod tests;
-use self::server::MyWebSocket;
+// mod user_api;
+// mod wsserver;
+mod communication;
 
 async fn index() -> impl Responder {
     HttpResponse::Ok()
@@ -19,16 +25,25 @@ async fn index() -> impl Responder {
 }
 
 // WebSocket handshake and start `MyWebSocket` actor.
-async fn websocket(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    ws::start(MyWebSocket::new(), &req, stream)
+async fn websocket(
+    req: HttpRequest,
+    stream: web::Payload,
+    server_addr: web::Data<Addr<Server>>,
+) -> Result<HttpResponse, Error> {
+    let server_ref = server_addr.get_ref().clone();
+    // ws::start(Session::new(server_ref), &req, stream)
+    ws::start(Session::new(server_ref), &req, stream)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("starting HTTP server at http://localhost:4000");
 
-    HttpServer::new(|| {
+    let server = Server::new().start();
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(Data::new(server.clone()))
             .service(web::resource("/").to(index))
             // Add the WebSocket route
             .service(web::resource("/api/ws").route(web::get().to(websocket)))

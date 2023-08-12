@@ -3,7 +3,7 @@ use serde::Deserialize;
 use super::types::*;
 use super::validate;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct LoginPayload {
     username: String,
     password: String,

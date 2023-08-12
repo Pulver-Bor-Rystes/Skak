@@ -1,18 +1,27 @@
-use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 use crate::security;
 use random_string::generate;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub const USERS_PATH: &str = "./users.json";
 const COOKIE_LENGTH: usize = 32;
 const COOKIE_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+pub struct LoadedUser {
+    username: String,
+}
+
+impl LoadedUser {
+    pub fn username(&self) -> &str {
+        &self.username
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Cookie {
     pub hash: String,
     pub is_password: bool,
 }
-
 
 impl Cookie {
     // makes a new cookie with a default value
@@ -21,11 +30,8 @@ impl Cookie {
 
         let mut cookie = Cookie::password(&str);
         cookie.is_password = false;
-        
-        return (
-            cookie,
-            str
-        )
+
+        return (cookie, str);
     }
 
     pub fn password(password: &str) -> Cookie {
@@ -36,19 +42,16 @@ impl Cookie {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Users {
-    pub list: HashMap<String, User>
+    pub list: HashMap<String, User>,
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct User {
     pub username: String,
     pub cookies: Vec<Cookie>,
 }
-
 
 #[derive(Debug, PartialEq, Serialize)]
 pub enum LoginError {

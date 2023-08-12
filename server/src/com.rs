@@ -1,7 +1,7 @@
 use actix_web_actors::ws::WebsocketContext;
 use serde::{Deserialize, Serialize};
 
-use crate::server::MyWebSocket;
+use crate::server::SocketContext;
 
 /// har to felter: topic og data
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -32,6 +32,12 @@ impl Failure {
     }
 }
 
+impl Success {
+    pub fn new<T: Serialize>(data: T) -> Success<T> {
+        Success { result: true, data }
+    }
+}
+
 impl WSMessage {
     pub fn ping() -> Self {
         WSMessage {
@@ -57,59 +63,3 @@ impl WSMessage {
         }
     }
 }
-
-pub struct Context<'a, CTX> {
-    ctx: &'a mut CTX,
-    sent: bool,
-}
-
-// En trait så vi kan videre give en context til en handle funktion
-pub trait MessageHandler {
-    fn send(&mut self, message: impl Serialize);
-
-    fn ok(&mut self, topic: impl ToString, data: impl Serialize) {
-        self.send(WSMessage {
-            topic: topic.to_string(),
-            data: Success { result: true, data },
-        })
-    }
-
-    fn error(&mut self, topic: impl ToString, error: impl Serialize) {
-        self.send(WSMessage {
-            topic: topic.to_string(),
-            data: Failure {
-                result: false,
-                error,
-            },
-        })
-    }
-}
-
-// Hjælpe funktioner
-impl<'a, CTX> Context<'a, CTX> {
-    pub fn new(data: &'a mut CTX) -> Self {
-        Context {
-            ctx: data,
-            sent: false,
-        }
-    }
-
-    pub fn serialize(&self, message: impl Serialize) -> String {
-        serde_json::to_string(&message).expect("failed to serialize")
-    }
-
-    pub fn sent(&self) -> bool {
-        self.sent
-    }
-}
-
-// Selve implementationen af Context for socket servere
-impl<'a> MessageHandler for Context<'a, WebsocketContext<MyWebSocket>> {
-    fn send(&mut self, message: impl Serialize) {
-        let serialized = self.serialize(message);
-        self.sent = true;
-        self.ctx.text(serialized);
-    }
-}
-
-// TODO! implementation af en http server context så vi også nemt kan svare den vej
