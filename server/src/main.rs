@@ -13,7 +13,7 @@ use communication::{server::Server, session::Session};
 // mod com;
 mod security;
 // mod server;
-mod tests;
+// mod tests;
 // mod user_api;
 // mod wsserver;
 mod communication;

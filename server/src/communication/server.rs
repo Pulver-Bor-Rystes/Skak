@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use actix::prelude::*;
 use serde::Serialize;
 
-use super::session::Session;
+use super::session::{DeployMessage, Session};
+use super::std::WrappedMsg as std_msg;
 use rand::{self, rngs::ThreadRng, Rng};
 
 struct Client {
@@ -18,6 +19,7 @@ impl Client {
             username: None,
         }
     }
+
     fn is_logged_in(&self) -> bool {
         self.username.is_some()
     }
@@ -35,6 +37,20 @@ impl Server {
         Self {
             clients: HashMap::new(),
             rng: rand::thread_rng(),
+        }
+    }
+
+    fn deploy_msg<M>(&mut self, id: &usize, msg: M)
+    where
+        M: Serialize + std::marker::Send + 'static + std::fmt::Debug,
+    {
+        let session = self.clients.get_mut(id);
+
+        let msg: DeployMessage<M> = DeployMessage::IntoJson(msg);
+
+        match session {
+            Some(client) => client.addr.do_send(msg),
+            _ => {}
         }
     }
 }
@@ -99,6 +115,11 @@ pub enum UpdateSessionData {
     LoggedIn(usize, String),
 }
 
+#[derive(Serialize, Debug)]
+enum TestVal {
+    test1(usize),
+    test2(usize),
+}
 impl Handler<UpdateSessionData> for Server {
     type Result = Option<usize>;
 
@@ -110,6 +131,11 @@ impl Handler<UpdateSessionData> for Server {
 
                 let client = Client::new(sess_addr);
                 self.clients.insert(id, client);
+
+                // Send en test besked til klienten når socket forbindelsen bliver oprettet!
+                let msg = std_msg::payload("test", TestVal::test1(123));
+                self.deploy_msg(&id, msg);
+
                 return Some(id);
             }
             UpdateSessionData::Disconnect(id) => {
@@ -129,3 +155,5 @@ impl Handler<UpdateSessionData> for Server {
         None
     }
 }
+
+// struct IncomingMessage

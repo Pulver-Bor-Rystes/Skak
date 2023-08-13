@@ -5,6 +5,7 @@ use crate::communication::server::{SendMessage, UpdateSessionData};
 use super::server::Server;
 use actix::prelude::*;
 use actix_web_actors::ws;
+use serde::Serialize;
 
 pub struct Session {
     server_addr: Addr<Server>,
@@ -97,13 +98,29 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
 /// En event som når modtages sender en besked direkte til klienten!
 #[derive(Message, Debug)]
 #[rtype(result = "Result<bool, std::io::Error>")]
-pub struct DeployMessage(String);
+pub enum DeployMessage<M: Serialize + std::marker::Send + std::fmt::Debug> {
+    IntoJson(M),
+    String(String),
+}
 
-impl Handler<DeployMessage> for Server {
+impl<M> Handler<DeployMessage<M>> for Session
+where
+    M: Serialize + std::marker::Send + std::fmt::Debug,
+{
     type Result = Result<bool, std::io::Error>;
 
-    fn handle(&mut self, msg: DeployMessage, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("Recieved msg: {:?}", msg);
+    fn handle(&mut self, msg: DeployMessage<M>, ctx: &mut Self::Context) -> Self::Result {
+        println!("sending msg: {:?} to client browser!", msg);
+
+        // I'm about to actually send this to the client browser!
+        let msg = match msg {
+            DeployMessage::IntoJson(msg) => {
+                serde_json::to_string(&msg).expect("json could not be parsed")
+            }
+            DeployMessage::String(msg) => msg,
+        };
+
+        ctx.text(msg);
 
         Ok(true)
     }
