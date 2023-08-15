@@ -4,13 +4,15 @@
 #include "perft.h"
 #include <sstream>
 #include <vector>
+#include "C:\json\single_include\nlohmann\json.hpp"
 
 void uci::init()
 {
     uci::loop();
 }
 
-void uci::print_engine_info() {
+void uci::print_engine_info()
+{
     cout << "id name ChessPlusPlus" << endl;
     cout << "id author Juules32" << endl;
     cout << "uciok" << endl;
@@ -28,20 +30,63 @@ void uci::loop()
             break; // Exit the loop if the user enters "quit"
         }
 
-        else if (input == "uci") {
+        else if (input == "uci")
+        {
             uci::print_engine_info();
         }
 
-        else if (input == "isready") {
+        else if (input == "isready")
+        {
             cout << "readyok" << endl;
         }
 
-        else if (input == "ucinewgame") {
+        else if (input == "ucinewgame")
+        {
             uci::parse_position("position startpos");
         }
 
         uci::parse_position(input);
         uci::parse_go(input);
+        uci::parse_json(input);
+    }
+}
+
+
+void uci::parse_json(string input)
+{
+    using json = nlohmann::json;
+    int json_i = input.find("json");
+
+    if (json_i != string::npos)
+    {
+        int fen_i = input.find("fen");
+        if (fen_i != string::npos)
+        {
+            board::parse_fen(input.substr(fen_i + 4));
+            moves move_list[1];
+            board::generate_moves(move_list);
+
+            json json_moves_data = json::array();
+
+            for (int i = 0; i < move_list->size; i++)
+            {
+                int move = move_list->array[i];
+                json move_data;
+
+                move_data["source_square"] = index_to_square[get_source(move)];
+                move_data["target_square"] = index_to_square[get_target(move)];
+                move_data["piece_type"] = string(1, ascii_pieces[get_piece(move)]);
+                move_data["promotion_piece"] = string(1, ascii_pieces[get_promotion_piece(move)]);
+                move_data["is_capture"] = is_capture(move) ? true : false;
+                move_data["is_double_pawn_push"] = is_double_pawn_push(move) ? true : false;
+                move_data["is_en_passant"] = is_en_passant(move) ? true : false;
+                move_data["is_castling"] = is_castling(move) ? true : false;
+
+                json_moves_data.push_back(move_data);
+            }
+
+            cout << json_moves_data << endl;
+        }
     }
 }
 
@@ -74,7 +119,8 @@ int uci::parse_position(string input)
     }
 }
 
-void uci::parse_go(string input) {
+void uci::parse_go(string input)
+{
     int go_i = input.find("go");
 
     if (go_i != string::npos)
@@ -84,22 +130,24 @@ void uci::parse_go(string input) {
         int eval_i = input.find("eval");
         int depth = 5;
 
-        if (depth_i != string::npos) {
+        if (depth_i != string::npos)
+        {
             depth = stoi(input.substr(depth_i + 6));
         }
-        else if (perft_i != string::npos) {
+        else if (perft_i != string::npos)
+        {
             // String to integer
             perft::test(stoi(input.substr(perft_i + 6)));
             return;
         }
-        else if (eval_i != string::npos) {
+        else if (eval_i != string::npos)
+        {
             // String to integer
             cout << board::eval() << endl;
             return;
         }
-        
-        board::search_position(depth);
 
+        board::search_position(depth);
     }
 }
 
