@@ -23,4 +23,4 @@ run: optimized
 
 # Clean the generated executables
 clean:
-	del $(OUTPUT)_debug.exe $(OUTPUT).exe
+	@$(RM) $(OUTPUT)_debug $(OUTPUT)

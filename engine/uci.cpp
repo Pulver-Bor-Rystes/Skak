@@ -59,10 +59,9 @@ void uci::parse_json(string input)
 
     if (json_i != string::npos)
     {
-        int fen_i = input.find("fen");
-        if (fen_i != string::npos)
+        int movedata_i = input.find("movedata");
+        if (movedata_i != string::npos)
         {
-            board::parse_fen(input.substr(fen_i + 4));
             moves move_list[1];
             board::generate_moves(move_list);
 
