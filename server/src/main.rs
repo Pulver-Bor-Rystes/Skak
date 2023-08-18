@@ -11,10 +11,11 @@ use actix_web_actors::ws;
 use communication::{server::Server, session::Session};
 
 // mod com;
+mod game_api;
 mod security;
 // mod server;
 // mod tests;
-// mod user_api;
+mod user_api;
 // mod wsserver;
 mod communication;
 

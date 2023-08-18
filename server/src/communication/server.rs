@@ -4,7 +4,7 @@ use actix::prelude::*;
 use serde::Serialize;
 
 use super::session::{DeployMessage, Session};
-use super::std::WrappedMsg as std_msg;
+use super::std_format_msgs::WrappedResult;
 use rand::{self, rngs::ThreadRng, Rng};
 
 struct Client {
@@ -40,18 +40,34 @@ impl Server {
         }
     }
 
-    fn deploy_msg<M>(&mut self, id: &usize, msg: M)
+    fn deploy_msg<M>(&mut self, ids: Vec<usize>, msg: M)
     where
-        M: Serialize + std::marker::Send + 'static + std::fmt::Debug,
+        M: Serialize + std::clone::Clone + std::marker::Send + 'static + std::fmt::Debug,
     {
-        let session = self.clients.get_mut(id);
+        for id in &ids {
+            let client = self.clients.get_mut(id);
 
-        let msg: DeployMessage<M> = DeployMessage::IntoJson(msg);
-
-        match session {
-            Some(client) => client.addr.do_send(msg),
-            _ => {}
+            match client {
+                Some(client) => client.addr.do_send(DeployMessage::IntoJson(msg.clone())),
+                None => {}
+            }
         }
+    }
+
+    fn broadcast_active_players(&mut self) {
+        let mut players = vec![];
+        let mut ids = vec![];
+        for (id, player) in self.clients.iter() {
+            match &player.username {
+                Some(username) => {
+                    players.push(username.clone());
+                    ids.push(id.clone());
+                }
+                None => {}
+            }
+        }
+
+        self.deploy_msg(ids, WrappedResult::content("active_players", players));
     }
 }
 
@@ -78,17 +94,39 @@ pub enum SendMessage<M: Serialize + std::fmt::Debug> {
 
 impl<M> Handler<SendMessage<M>> for Server
 where
-    M: Serialize + std::fmt::Debug,
+    M: Serialize + std::clone::Clone + std::marker::Send + 'static + std::fmt::Debug,
 {
     type Result = Result<bool, std::io::Error>;
 
     fn handle(&mut self, msg: SendMessage<M>, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("Recieved msg: {:?}", msg);
+        // println!("Recieved msg: {:?}", msg);
 
         // få fat i klienternes addr og bed dem sende en besked!
         match msg {
-            SendMessage::Broadcast(_msg) => {}
-            SendMessage::To(_target, _msg) => {}
+            SendMessage::Broadcast(msg) => {
+                // find alle id'er
+                let mut list_of_ids = vec![];
+                for id in self.clients.keys() {
+                    list_of_ids.push(id.clone());
+                }
+
+                // send til alle id'er / klienter
+                self.deploy_msg(list_of_ids, msg.clone());
+            }
+            SendMessage::To(target, msg) => {
+                let target = Some(target);
+                let mut target_id = None;
+                for (id, client) in self.clients.iter() {
+                    if client.username == target {
+                        target_id = Some(id.clone());
+                    }
+                }
+
+                match target_id {
+                    Some(id) => self.deploy_msg(vec![id], msg),
+                    None => panic!("Could not find a valid id!"), // Hvis det her bliver et problem, kan det være at vi skal tillade at den bare ignorerer det
+                }
+            }
         }
 
         Ok(true)
@@ -115,39 +153,31 @@ pub enum UpdateSessionData {
     LoggedIn(usize, String),
 }
 
-#[derive(Serialize, Debug)]
-enum TestVal {
-    test1(usize),
-    test2(usize),
-}
 impl Handler<UpdateSessionData> for Server {
     type Result = Option<usize>;
 
     fn handle(&mut self, msg: UpdateSessionData, _ctx: &mut Context<Self>) -> Self::Result {
         match msg {
             UpdateSessionData::Connect(sess_addr) => {
+                // Gemmer klienten, så vi altid kan kommunikere til den
                 let id = self.rng.gen::<usize>();
-                println!("Allocating id: {}", id);
-
                 let client = Client::new(sess_addr);
                 self.clients.insert(id, client);
-
-                // Send en test besked til klienten når socket forbindelsen bliver oprettet!
-                let msg = std_msg::payload("test", TestVal::test1(123));
-                self.deploy_msg(&id, msg);
 
                 return Some(id);
             }
             UpdateSessionData::Disconnect(id) => {
                 if let Some(client) = self.clients.remove(&id) {
                     if client.is_logged_in() {
-                        println!("bye bye {}", client.username.unwrap())
+                        self.broadcast_active_players();
                     }
                 }
             }
             UpdateSessionData::LoggedIn(id, username) => {
                 if let Some(mut client) = self.clients.get_mut(&id) {
                     client.username = Some(username);
+
+                    self.broadcast_active_players();
                 }
             }
         }

@@ -59,7 +59,7 @@ pub enum LoginError {
     WrongPassword,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum LoginSuccess {
     Cookie(String),
     LoggedIn,

@@ -1,13 +1,37 @@
 import { writable, type Writable } from "svelte/store";
 import { browser } from "$app/environment";
 
+
+type Message = {
+    topic: string,
+    payload: Payload,
+}
+
+
+type Payload = {
+    result: boolean,
+    content: any,
+}
+
+
 class Socket {
     ws: WebSocket | null;
     open: boolean = false;
-    listeners: Map<string, (data: any) => void> = new Map();
+    listeners: Map<string, (payload: any) => void> = new Map();
     queue: string[] = [];
 
+    reopen_attempts = 0;
+
     constructor() {
+        this.listeners = new Map();
+        this.ws = null;
+
+        this.new_socket();
+    }
+
+
+    new_socket() {
+        this.reopen_attempts += 1;
         if (!browser) {
             this.ws = null
             return;
@@ -18,44 +42,32 @@ class Socket {
         let socket = new WebSocket(wsUri);
 
         socket.onopen = () => {
+            this.reopen_attempts = 0;
             this.open = true;
         };
 
         socket.onmessage = (evt) => {
-            let data: {
-                topic: string,
-                data: any
-            };
-
-            try {
-                data = JSON.parse(evt.data);                
-            }
-            catch (e) {
-                data = {
-                    topic: "",
-                    data: evt.data
-                };
-            }
+            let msg = this.extract_msg(evt)
 
             let handled = false;
 
             // make an error if topic contains "no topic"
-            if (data.topic == "no topic") {
-                console.error("server responded with topic: 'no topic' - Check your request\n", data.data)
+            if (msg.topic == "no topic") {
+                console.error("server responded with topic: 'no topic' - Check your request\n", msg.payload)
                 handled = true
             }
 
             
             // iterate over listeners
             this.listeners.forEach((cb, topic) => {
-                if (topic === data.topic) {
-                    cb(data.data);
+                if (topic === msg.topic) {
+                    cb(msg.payload);
                     handled = true;
                 }
             })
 
             if (!handled) {
-                console.error("unhandled event:", data);
+                console.error("unhandled event:", msg);
             }
         }
 
@@ -65,14 +77,13 @@ class Socket {
         };
 
         this.ws = socket;
-        this.listeners = new Map();
     }
 
 
-    send(topic: string, data: any) {
+    send(topic: string, content: any) {
         this.queue.push(JSON.stringify({
             topic,
-            data
+            content,
         }));
 
         this.send_queue();
@@ -87,6 +98,9 @@ class Socket {
         else {
             if (count > 100) {
                 console.error("Socket is still not open");
+                if (this.reopen_attempts < 1) {
+                    this.new_socket();
+                }
                 return;
             }
 
@@ -94,11 +108,32 @@ class Socket {
         }
     }
 
-    on(topic: string, cb: (data: any) => void) {
+    on(topic: string, cb: (payload: Payload) => void) {
         if (this.listeners.has(topic)) {
-            console.error("Listener already exists for topic:", topic);
+            console.warn("Replacing listener for topic:", topic);
         }
         this.listeners.set(topic, cb);
+    }
+
+
+
+    extract_msg(evt: MessageEvent<any>) {
+        let msg: {
+            topic: string,
+            payload: any
+        };
+
+        try {
+            msg = JSON.parse(evt.data);                
+        }
+        catch (e) {
+            msg = {
+                topic: "",
+                payload: evt.data
+            };
+        }
+
+        return msg
     }
 }
 

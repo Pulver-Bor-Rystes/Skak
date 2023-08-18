@@ -1,10 +1,17 @@
+use serde_json::Error as JsonErr;
 use std::time::Instant;
 
-use crate::communication::server::{SendMessage, UpdateSessionData};
+use crate::{
+    communication::{
+        server::{SendMessage, UpdateSessionData},
+        std_format_msgs::{TopicMsg, WrappedResult},
+    },
+    user_api,
+};
 
 use super::server::Server;
 use actix::prelude::*;
-use actix_web_actors::ws;
+use actix_web_actors::ws::{self, WebsocketContext};
 use serde::Serialize;
 
 pub struct Session {
@@ -49,8 +56,20 @@ impl Actor for Session {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        println!(" > ! A socket conn did stop");
+        // websocket forbindelsen stoppede
+        self.server_addr
+            .do_send(UpdateSessionData::Disconnect(self.id));
     }
+}
+
+/// En context så når en api endpoint skal svare tilbage, så kan de bede serveren om at gøre noget eller de
+pub struct SessionContext<'a> {
+    pub topic: String,
+    pub msg: String,
+    pub srv: Addr<Server>,
+    pub client: &'a mut WebsocketContext<Session>,
+    pub client_id: usize,
+    is_handled: bool,
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
@@ -76,7 +95,45 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                 self.hb = Instant::now();
             }
             ws::Message::Text(text) => {
-                println!(" -- > recv: {}", text);
+                let parsed: Result<TopicMsg, JsonErr> = serde_json::from_str(&text);
+
+                // vi vil gerne kende topic, så resten af vores api hurtigt kan
+                // finde ud af om de skal håndterer beskeden!
+                let topic = match parsed {
+                    Ok(parsed) => parsed.topic,
+                    Err(_) => "no topic".to_string(),
+                };
+
+                let mut ac = SessionContext {
+                    topic,
+                    msg: text.to_string(),
+                    srv: self.server_addr.clone(),
+                    client: ctx,
+                    is_handled: false,
+                    client_id: self.id.clone(),
+                };
+
+                // en række funktioner som kan håndterer en request!
+                let handlers = vec![user_api::interface::handle];
+
+                // så snart en request er blevet håndteret bliver den ikke sendt videre!
+                for handle_fn in handlers {
+                    if ac.is_handled {
+                        break;
+                    }
+                    match handle_fn(&mut ac) {
+                        Some(_) => ac.is_handled = true,
+                        None => {}
+                    }
+                }
+
+                if !ac.is_handled {
+                    println!("message was not handled: {:?}", text);
+                    ac.client
+                        .text(WrappedResult::error(ac.topic, "was not handled").serialize());
+                }
+
+                // user_api::interface::handle(&mut ac);
             }
             ws::Message::Binary(_) => println!("Unexpected binary"),
             ws::Message::Close(reason) => {
@@ -110,8 +167,6 @@ where
     type Result = Result<bool, std::io::Error>;
 
     fn handle(&mut self, msg: DeployMessage<M>, ctx: &mut Self::Context) -> Self::Result {
-        println!("sending msg: {:?} to client browser!", msg);
-
         // I'm about to actually send this to the client browser!
         let msg = match msg {
             DeployMessage::IntoJson(msg) => {

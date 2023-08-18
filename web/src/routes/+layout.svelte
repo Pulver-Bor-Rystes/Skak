@@ -6,11 +6,16 @@
 
     onMount(() => {
         $socket.on("test", (data) => {
-
+            console.log(data)
         })
     });
 </script>
 
-
-<Login />
 <slot />
+<Login />
+
+<style lang="postcss">
+    :global(html) {
+      background-color: rgb(0, 0, 0);
+    }
+</style>

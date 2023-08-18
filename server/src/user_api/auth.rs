@@ -3,9 +3,9 @@ use serde::Deserialize;
 use super::types::*;
 use super::validate;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct LoginPayload {
-    username: String,
+    pub username: String,
     password: String,
 }
 
@@ -50,12 +50,10 @@ pub fn login(payload: LoginPayload) -> Result<LoginSuccess, LoginError> {
     if cookie.is_password {
         let new_cookie = Cookie::new();
 
-        users
-            .list
-            .get_mut(&username)
-            .unwrap()
-            .cookies
-            .push(new_cookie.0);
+        let user = users.list.get_mut(&username).unwrap();
+
+        user.cookies.retain(|cookie| cookie.is_password);
+        user.cookies.push(new_cookie.0);
 
         save(users);
         return Ok(LoginSuccess::Cookie(new_cookie.1));

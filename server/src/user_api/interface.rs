@@ -1,43 +1,55 @@
+use crate::communication::server::UpdateSessionData;
+use crate::communication::session::SessionContext;
+use crate::communication::std_format_msgs::{WrappedContent, WrappedResult};
+use serde_json::Error as JsonError;
+
 use super::auth;
 use super::auth::LoginPayload;
-use super::types;
-use crate::com::WSMessage;
-use crate::server::SocketContext;
 
-pub fn handle(ctx: &mut SocketContext) {
-    let _ = match ctx.topic.as_str() {
+pub fn handle(ctx: &mut SessionContext) -> Option<()> {
+    let res = match ctx.topic.as_str() {
         "login" => handle_login(ctx),
-        "signup" => handle_login(ctx),
-        _ => Ok(()),
+        "signup" => handle_signup(ctx),
+        _ => return None,
     };
+
+    match res {
+        Ok(_) => Some(()),
+        Err(_) => None,
+    }
 }
 
-fn handle_login(ctx: &mut SocketContext) -> Result<(), serde_json::Error> {
-    let message: WSMessage<LoginPayload> = serde_json::from_str(&ctx.get_msg())?;
-    println!("message: {:?}", message);
+fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
+    let msg: WrappedContent<LoginPayload> = serde_json::from_str(&ctx.msg)?;
 
-    match auth::login(message.data) {
-        Ok(loginsuccess) => match loginsuccess {
-            types::LoginSuccess::Cookie(cookie) => {
-                ctx.ok(cookie);
-            }
-            types::LoginSuccess::LoggedIn => {
-                ctx.ok("logged in");
-            }
-        },
-        Err(loginerror) => ctx.error(loginerror),
-    }
+    let username = msg.content.username.clone();
+    match auth::login(msg.content) {
+        Ok(success) => {
+            ctx.srv
+                .do_send(UpdateSessionData::LoggedIn(ctx.client_id, username));
+            ctx.client
+                .text(WrappedResult::content(&ctx.topic, success).serialize());
+        }
+        Err(err) => ctx
+            .client
+            .text(WrappedResult::error(&ctx.topic, err).serialize()),
+    };
 
     Ok(())
 }
 
-fn handle_signup(ctx: &mut SocketContext) -> Result<(), serde_json::Error> {
-    let message: WSMessage<LoginPayload> = serde_json::from_str(&ctx.get_msg())?;
+fn handle_signup(ctx: &mut SessionContext) -> Result<(), serde_json::Error> {
+    let msg: WrappedContent<LoginPayload> = serde_json::from_str(&ctx.msg)?;
 
-    match auth::signup(message.data) {
-        Ok(cookie) => ctx.ok(cookie),
-        Err(signuperror) => ctx.error(signuperror),
-    }
+    match auth::signup(msg.content) {
+        Ok(success) => {
+            ctx.client
+                .text(WrappedResult::content(&ctx.topic, success).serialize());
+        }
+        Err(err) => ctx
+            .client
+            .text(WrappedResult::error(&ctx.topic, err).serialize()),
+    };
 
     Ok(())
 }

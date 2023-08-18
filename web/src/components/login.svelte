@@ -9,6 +9,7 @@
     let password: string;
 
     let show_prompt = false;
+    let ignore_login_reply = false;
 
     // fired when button is pressed
     function login() {
@@ -28,19 +29,23 @@
 
 
     // handle login reply
-    $socket.on("login", (resp) => {
-        if (resp.result) {
+    $socket.on("login", (msg) => {
+        if (msg.result) {
             $user.logged_in = true;
             $user.username = username;
 
-            save_login_info(resp.data);
+            save_login_info(msg.content.Cookie);
 
             return
         }
-
         show_prompt = true
+
+        if (ignore_login_reply) {
+            ignore_login_reply = false;
+            return;
+        }
         
-        if (resp.error == "UsernameNotFound") {
+        if (msg.content == "UsernameNotFound") {
             let resp = prompt("Brugernavn ikke fundet, vil du oprette en bruger? (y/n)");
             if (resp?.toLowerCase().includes("y")) {
                 $socket.send("signup", {
@@ -52,10 +57,11 @@
     })
 
     // handle signup reply
-    $socket.on("signup", (data) => {
-        console.log("signup:", data);
-        if (data.result) {
-            save_login_info(data.data);
+    $socket.on("signup", (msg) => {
+        if (msg.result) {
+            save_login_info(msg.content);
+            $user.logged_in = true;
+            $user.username = username;
         }
     })
 
@@ -64,6 +70,7 @@
     if (browser) {
         if (localStorage.getItem("token")) {
             username = localStorage.getItem("username") || "";
+            ignore_login_reply = true; // Den skal ikke forsøge at oprette en bruger når den prøver automatisk at logge ind
             $socket.send("login", {
                 username: localStorage.getItem("username"),
                 password: localStorage.getItem("token")
@@ -76,8 +83,8 @@
 
 </script>
 
-<main class="h-screen">
-    {#if !$user.logged_in && show_prompt}
+{#if !$user.logged_in && show_prompt}
+    <div class="absolute top-0 w-screen h-screen bg-black">
         <div transition:fly={{ y: 200, duration: 500 }} class="w-fit translate-x-10 translate-y-10 outline-1 p-5 outline-primary rounded">
             <h1 class="text-primary text-3xl">Tid til at <span class="text-accent"> logge </span> ind 😊</h1>
             <input bind:value={username} class="rounded p-2 mt-5 bg-primary text-white" placeholder="Brugernavn" type="username">
@@ -85,12 +92,5 @@
 
             <button on:click={login} class="border-primary-btn border-2 hover:bg-primary-btn transition-colors rounded p-2 mt-5"> Næste </button>
         </div>
-    {/if}
-</main>
-
-
-<style lang="postcss">
-    :global(html) {
-      background-color: rgb(0, 0, 0);
-    }
-  </style>
+    </div>
+{/if}
