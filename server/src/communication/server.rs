@@ -3,18 +3,21 @@ use std::collections::HashMap;
 use actix::prelude::*;
 use serde::Serialize;
 
+use crate::actors::game::{self, Game};
+
 use super::session::{DeployMessage, Session};
 use super::std_format_msgs::WrappedResult;
 use rand::{self, rngs::ThreadRng, Rng};
 
-struct Client {
+#[derive(Debug)]
+struct SessionData {
     addr: Addr<Session>,
     username: Option<String>,
 }
 
-impl Client {
+impl SessionData {
     fn new(addr: Addr<Session>) -> Self {
-        Client {
+        SessionData {
             addr,
             username: None,
         }
@@ -25,9 +28,22 @@ impl Client {
     }
 }
 
+struct GameData {
+    addr: Addr<Game>,
+    p1: String,
+    p2: String,
+}
+
+impl GameData {
+    fn has_player(&self, username: &str) -> bool {
+        &self.p1 == username || &self.p2 == username
+    }
+}
+
 pub struct Server {
     /// En liste over alle forbindelser uanset om de logget ind eller ej!
-    clients: HashMap<usize, Client>,
+    clients: HashMap<usize, SessionData>,
+    games: HashMap<usize, GameData>,
 
     rng: ThreadRng,
 }
@@ -36,6 +52,7 @@ impl Server {
     pub fn new() -> Self {
         Self {
             clients: HashMap::new(),
+            games: HashMap::new(),
             rng: rand::thread_rng(),
         }
     }
@@ -69,6 +86,16 @@ impl Server {
 
         self.deploy_msg(ids, WrappedResult::content("active_players", players));
     }
+
+    fn find_game(&self, username: &str) -> Option<&GameData> {
+        let game = self.games.iter().find(|game| game.1.has_player(username));
+
+        if game.is_some() {
+            Some(game.unwrap().1)
+        } else {
+            None
+        }
+    }
 }
 
 impl Actor for Server {
@@ -89,7 +116,7 @@ impl Actor for Server {
 #[rtype(result = "Result<bool, std::io::Error>")]
 pub enum SendMessage<M: Serialize + std::fmt::Debug> {
     Broadcast(M),
-    To(String, M),
+    To(Vec<String>, M),
 }
 
 impl<M> Handler<SendMessage<M>> for Server
@@ -113,19 +140,22 @@ where
                 // send til alle id'er / klienter
                 self.deploy_msg(list_of_ids, msg.clone());
             }
-            SendMessage::To(target, msg) => {
-                let target = Some(target);
-                let mut target_id = None;
-                for (id, client) in self.clients.iter() {
-                    if client.username == target {
-                        target_id = Some(id.clone());
-                    }
-                }
+            SendMessage::To(targets, msg) => {
+                let mut id_list = vec![];
 
-                match target_id {
-                    Some(id) => self.deploy_msg(vec![id], msg),
-                    None => panic!("Could not find a valid id!"), // Hvis det her bliver et problem, kan det være at vi skal tillade at den bare ignorerer det
-                }
+                self.clients.iter().for_each(|(id, sesh_data)| {
+                    if sesh_data.username.is_none() {
+                        return;
+                    }
+
+                    if !targets.contains(&sesh_data.username.as_ref().unwrap()) {
+                        return;
+                    }
+
+                    id_list.push(id.clone());
+                });
+
+                self.deploy_msg(id_list, msg);
             }
         }
 
@@ -161,7 +191,7 @@ impl Handler<UpdateSessionData> for Server {
             UpdateSessionData::Connect(sess_addr) => {
                 // Gemmer klienten, så vi altid kan kommunikere til den
                 let id = self.rng.gen::<usize>();
-                let client = Client::new(sess_addr);
+                let client = SessionData::new(sess_addr);
                 self.clients.insert(id, client);
 
                 return Some(id);
@@ -186,4 +216,78 @@ impl Handler<UpdateSessionData> for Server {
     }
 }
 
-// struct IncomingMessage
+#[derive(Message)]
+#[rtype(result = "bool")]
+pub enum API {
+    RequestGameState(String), // username
+    NewGame(String, String),  // player1 and player2 username
+}
+
+impl Handler<API> for Server {
+    type Result = bool;
+
+    fn handle(&mut self, msg: API, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            API::RequestGameState(username) => {
+                let game = self.find_game(&username);
+
+                if game.is_some() {
+                    game.unwrap().addr.do_send(game::API::GetState(username));
+                }
+            }
+            API::NewGame(player1, player2) => {
+                let id = self.rng.gen::<usize>();
+
+                if self.find_game(&player1).is_some() || self.find_game(&player2).is_some() {
+                    return false;
+                }
+
+                let p1 = self
+                    .clients
+                    .iter()
+                    .filter(|client| client.1.is_logged_in())
+                    .find(|client| client.1.username.as_ref().unwrap() == &player1);
+
+                let p2 = self
+                    .clients
+                    .iter()
+                    .filter(|client| client.1.is_logged_in())
+                    .find(|client| client.1.username.as_ref().unwrap() == &player2);
+
+                if p1.is_none() || p2.is_none() {
+                    return false;
+                }
+
+                let p1 = p1.unwrap().1.username.as_ref().unwrap().clone();
+                let p2 = p2.unwrap().1.username.as_ref().unwrap().clone();
+
+                let game = Game::new(id.clone(), ctx.address().clone(), p1.clone(), p2.clone());
+
+                let addr = game.start();
+                self.games.insert(id, GameData { addr, p1, p2 });
+            }
+        }
+
+        true
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "bool")]
+pub enum Cleanup {
+    Game(usize), // fjerner et spil via dets id!
+}
+
+impl Handler<Cleanup> for Server {
+    type Result = bool;
+
+    fn handle(&mut self, msg: Cleanup, _ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            Cleanup::Game(id) => {
+                let _ = self.games.remove(&id);
+            }
+        }
+
+        true
+    }
+}

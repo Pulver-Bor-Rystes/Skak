@@ -7,16 +7,6 @@ pub const USERS_PATH: &str = "./users.json";
 const COOKIE_LENGTH: usize = 32;
 const COOKIE_CHARSET: &str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-pub struct LoadedUser {
-    username: String,
-}
-
-impl LoadedUser {
-    pub fn username(&self) -> &str {
-        &self.username
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Cookie {
     pub hash: String,

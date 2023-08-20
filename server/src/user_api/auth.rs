@@ -9,15 +9,6 @@ pub struct LoginPayload {
     password: String,
 }
 
-impl LoginPayload {
-    pub fn new(username: impl ToString, password: impl ToString) -> LoginPayload {
-        LoginPayload {
-            username: username.to_string(),
-            password: password.to_string(),
-        }
-    }
-}
-
 pub fn signup(payload: LoginPayload) -> Result<String, SignupError> {
     let mut users = load();
     let LoginPayload { username, password } = payload;
@@ -62,6 +53,7 @@ pub fn login(payload: LoginPayload) -> Result<LoginSuccess, LoginError> {
     Ok(LoginSuccess::LoggedIn)
 }
 
+#[allow(dead_code)]
 #[cfg(test)]
 pub fn reset() {
     let users = Users::default();
@@ -93,7 +85,7 @@ fn load() -> Users {
                     println!("File created");
                     return load();
                 }
-                Err(e) => {
+                Err(_e) => {
                     panic!("Failed to create file");
                 }
             }

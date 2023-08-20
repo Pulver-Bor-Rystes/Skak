@@ -1,6 +1,8 @@
-use crate::communication::server::UpdateSessionData;
+use crate::communication::server::{self, UpdateSessionData};
 use crate::communication::session::SessionContext;
 use crate::communication::std_format_msgs::{WrappedContent, WrappedResult};
+use serde::de::Error;
+use serde::Deserialize;
 use serde_json::Error as JsonError;
 
 use super::auth;
@@ -10,6 +12,8 @@ pub fn handle(ctx: &mut SessionContext) -> Option<()> {
     let res = match ctx.topic.as_str() {
         "login" => handle_login(ctx),
         "signup" => handle_signup(ctx),
+        "newgame" => handle_newgame(ctx),
+        "getstate" => handle_getstate(ctx),
         _ => return None,
     };
 
@@ -25,31 +29,68 @@ fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
     let username = msg.content.username.clone();
     match auth::login(msg.content) {
         Ok(success) => {
-            ctx.srv
-                .do_send(UpdateSessionData::LoggedIn(ctx.client_id, username));
-            ctx.client
+            ctx.session.server_addr.do_send(UpdateSessionData::LoggedIn(
+                ctx.session.id,
+                username.clone(),
+            ));
+            ctx.socket
                 .text(WrappedResult::content(&ctx.topic, success).serialize());
+
+            ctx.session.username = Some(username);
         }
         Err(err) => ctx
-            .client
+            .socket
             .text(WrappedResult::error(&ctx.topic, err).serialize()),
     };
 
     Ok(())
 }
 
-fn handle_signup(ctx: &mut SessionContext) -> Result<(), serde_json::Error> {
+fn handle_signup(ctx: &mut SessionContext) -> Result<(), JsonError> {
     let msg: WrappedContent<LoginPayload> = serde_json::from_str(&ctx.msg)?;
 
-    match auth::signup(msg.content) {
+    match auth::signup(msg.content.clone()) {
         Ok(success) => {
-            ctx.client
+            ctx.socket
                 .text(WrappedResult::content(&ctx.topic, success).serialize());
+
+            ctx.session.username = Some(msg.content.username);
         }
         Err(err) => ctx
-            .client
+            .socket
             .text(WrappedResult::error(&ctx.topic, err).serialize()),
     };
+
+    Ok(())
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct PlayerNamePayload {
+    player: String,
+}
+
+fn handle_newgame(ctx: &mut SessionContext) -> Result<(), JsonError> {
+    let msg: WrappedContent<PlayerNamePayload> = serde_json::from_str(&ctx.msg)?;
+
+    ctx.session.server_addr.do_send(server::API::NewGame(
+        ctx.session.username.clone().unwrap_or("".to_string()),
+        msg.content.player,
+    ));
+
+    Ok(())
+}
+
+fn handle_getstate(ctx: &mut SessionContext) -> Result<(), JsonError> {
+    if ctx.session.username.is_none() {
+        return Err(Error::custom("not logged in!"));
+    }
+
+    let username = ctx.session.username.as_ref().unwrap().clone();
+
+    // sig til serveren at vi gerne vil bede om en opdatering fra det spil vi er en del af!
+    ctx.session
+        .server_addr
+        .do_send(server::API::RequestGameState(username));
 
     Ok(())
 }

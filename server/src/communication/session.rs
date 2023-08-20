@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use crate::{
     communication::{
-        server::{SendMessage, UpdateSessionData},
+        server::UpdateSessionData,
         std_format_msgs::{TopicMsg, WrappedResult},
     },
     user_api,
@@ -14,10 +14,12 @@ use actix::prelude::*;
 use actix_web_actors::ws::{self, WebsocketContext};
 use serde::Serialize;
 
+#[derive(Debug)]
 pub struct Session {
-    server_addr: Addr<Server>,
+    pub server_addr: Addr<Server>,
     /// Id bliver givet af serveren
-    id: usize,
+    pub id: usize,
+    pub username: Option<String>,
     hb: Instant,
 }
 
@@ -26,6 +28,7 @@ impl Session {
         Session {
             server_addr,
             id: 0, // Nul for nu, når en klient forbinder bliver den her værdi overskrevet!
+            username: None,
             hb: Instant::now(),
         }
     }
@@ -66,10 +69,11 @@ impl Actor for Session {
 pub struct SessionContext<'a> {
     pub topic: String,
     pub msg: String,
-    pub srv: Addr<Server>,
-    pub client: &'a mut WebsocketContext<Session>,
-    pub client_id: usize,
-    is_handled: bool,
+    pub session: &'a mut Session,
+    // pub srv: Addr<Server>,
+    pub socket: &'a mut WebsocketContext<Session>,
+    // pub client_id: usize,
+    // pub client_username: String,
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
@@ -104,32 +108,41 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                     Err(_) => "no topic".to_string(),
                 };
 
+                // let mut ac = SessionContext {
+                //     topic,
+                //     msg: text.to_string(),
+                //     srv: self.server_addr.clone(),
+                //     client: ctx,
+                //     is_handled: false,
+                //     client_id: self.id.clone(),
+                //     client_username: self.ctx.clclie,
+                // };
+
                 let mut ac = SessionContext {
                     topic,
                     msg: text.to_string(),
-                    srv: self.server_addr.clone(),
-                    client: ctx,
-                    is_handled: false,
-                    client_id: self.id.clone(),
+                    session: self,
+                    socket: ctx,
                 };
+                let mut is_handled = false;
 
                 // en række funktioner som kan håndterer en request!
                 let handlers = vec![user_api::interface::handle];
 
                 // så snart en request er blevet håndteret bliver den ikke sendt videre!
                 for handle_fn in handlers {
-                    if ac.is_handled {
+                    if is_handled {
                         break;
                     }
                     match handle_fn(&mut ac) {
-                        Some(_) => ac.is_handled = true,
+                        Some(_) => is_handled = true,
                         None => {}
                     }
                 }
 
-                if !ac.is_handled {
+                if !is_handled {
                     println!("message was not handled: {:?}", text);
-                    ac.client
+                    ac.socket
                         .text(WrappedResult::error(ac.topic, "was not handled").serialize());
                 }
 
@@ -157,7 +170,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
 #[rtype(result = "Result<bool, std::io::Error>")]
 pub enum DeployMessage<M: Serialize + std::marker::Send + std::fmt::Debug> {
     IntoJson(M),
-    String(String),
 }
 
 impl<M> Handler<DeployMessage<M>> for Session
@@ -172,7 +184,6 @@ where
             DeployMessage::IntoJson(msg) => {
                 serde_json::to_string(&msg).expect("json could not be parsed")
             }
-            DeployMessage::String(msg) => msg,
         };
 
         ctx.text(msg);

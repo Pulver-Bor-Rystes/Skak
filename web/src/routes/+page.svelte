@@ -19,11 +19,17 @@
             return true;
         });
     })
+
+    $socket.on("state", ({ content }) => {
+        console.log("FEN:", content)
+    })
     
 </script>
 
 <main class="m-5 text-white">
-    <h1 class="text-4xl"> Skak </h1>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+    <h1 class="text-4xl" on:click={() => $socket.send("getstate", {}) }> Skak </h1>
 
     <p class="mb-5"> Profil: {$user.username}</p>
 
@@ -32,7 +38,7 @@
         {#each players as username}
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <li class=""> - { username } (<span on:click={() => $socket.send("invite", { username }) } class="hover:text-blue cursor-pointer">tryk for at udfordre</span>)</li>
+            <li class=""> - { username } (<span on:click={() => $socket.send("newgame", { player: username }) } class="hover:text-blue cursor-pointer">tryk for at udfordre</span>)</li>
         {/each}
     </ul>
 </main>

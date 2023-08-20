@@ -10,14 +10,11 @@ use actix_web::{
 use actix_web_actors::ws;
 use communication::{server::Server, session::Session};
 
-// mod com;
-mod game_api;
-mod security;
-// mod server;
-// mod tests;
-mod user_api;
-// mod wsserver;
+// mod game_api;
+mod actors;
 mod communication;
+mod security;
+mod user_api;
 
 async fn index() -> impl Responder {
     HttpResponse::Ok()
