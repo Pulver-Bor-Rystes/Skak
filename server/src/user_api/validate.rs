@@ -1,7 +1,5 @@
-use crate::security;
-
-use super::types::{Users, SignupError, LoginError, Cookie};
-
+use super::types::{Cookie, LoginError, SignupError, Users};
+use pwhash::bcrypt;
 
 pub fn signup(users: &Users, usr: &str, password: &str) -> Result<(), SignupError> {
     // check whether username is already taken
@@ -32,7 +30,6 @@ pub fn signup(users: &Users, usr: &str, password: &str) -> Result<(), SignupErro
     Ok(())
 }
 
-
 pub fn login(users: &Users, usr: &str, key: &str) -> Result<Cookie, LoginError> {
     // check whether username exists
     if !users.list.contains_key(usr) {
@@ -41,11 +38,11 @@ pub fn login(users: &Users, usr: &str, key: &str) -> Result<Cookie, LoginError> 
 
     // check whether password is correct
     let user = users.list.get(usr).unwrap();
-    let cookie_list = user.cookies.iter().find(|&cookie| {        
-        if !security::verify(key, &cookie.hash) {
+    let cookie_list = user.cookies.iter().find(|&cookie| {
+        if !bcrypt::verify(key, &cookie.hash) {
             return false;
         }
-        
+
         return true;
     });
 

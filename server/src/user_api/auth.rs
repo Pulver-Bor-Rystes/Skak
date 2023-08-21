@@ -1,17 +1,11 @@
-use serde::Deserialize;
+use crate::std_format_msgs::content_templates;
 
 use super::types::*;
 use super::validate;
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct LoginPayload {
-    pub username: String,
-    password: String,
-}
-
-pub fn signup(payload: LoginPayload) -> Result<String, SignupError> {
+pub fn signup(payload: content_templates::Login) -> Result<String, SignupError> {
     let mut users = load();
-    let LoginPayload { username, password } = payload;
+    let content_templates::Login { username, password } = payload;
 
     validate::signup(&users, &username, &password)?;
 
@@ -31,9 +25,9 @@ pub fn signup(payload: LoginPayload) -> Result<String, SignupError> {
     Ok(cookie_value)
 }
 
-pub fn login(payload: LoginPayload) -> Result<LoginSuccess, LoginError> {
+pub fn login(payload: content_templates::Login) -> Result<LoginSuccess, LoginError> {
     let mut users = load();
-    let LoginPayload { username, password } = payload;
+    let content_templates::Login { username, password } = payload;
 
     let cookie = validate::login(&users, &username, &password)?;
 

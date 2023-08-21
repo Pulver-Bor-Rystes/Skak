@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-
-use actix::prelude::*;
-use serde::Serialize;
-
-use crate::actors::game::{self, Game};
-
 use super::session::{DeployMessage, Session};
-use super::std_format_msgs::WrappedResult;
+use crate::{
+    actors::game::{self, Game},
+    std_format_msgs::WrappedResult,
+};
+use actix::prelude::*;
 use rand::{self, rngs::ThreadRng, Rng};
+use serde::Serialize;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 struct SessionData {

@@ -2,10 +2,8 @@ use serde_json::Error as JsonErr;
 use std::time::Instant;
 
 use crate::{
-    communication::{
-        server::UpdateSessionData,
-        std_format_msgs::{TopicMsg, WrappedResult},
-    },
+    actors::server::UpdateSessionData,
+    std_format_msgs::{TopicMsg, WrappedResult},
     user_api,
 };
 

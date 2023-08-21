@@ -20,17 +20,6 @@ pub struct Payload<M = String> {
     pub content: M,
 }
 
-// #[derive(Serialize, Deserialize, Debug)]
-// pub struct Content<M = String> {
-//     pub content: M,
-// }
-
-// #[derive(Serialize, Deserialize, Debug)]
-// pub enum Content<M = String> {
-//     Content(M),
-//     Error(M),
-// }
-
 impl<M> WrappedResult<M>
 where
     M: Serialize + std::marker::Send + std::fmt::Debug,
@@ -67,4 +56,20 @@ where
 pub struct TopicMsg {
     pub topic: String,
     pub content: serde_json::Value,
+}
+
+// En masse templates når man skal parse en besked fra klienten
+pub mod content_templates {
+    use serde::Deserialize;
+
+    #[derive(Deserialize, Debug, Clone)]
+    pub struct Username {
+        pub username: String,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
+    pub struct Login {
+        pub username: String,
+        pub password: String,
+    }
 }

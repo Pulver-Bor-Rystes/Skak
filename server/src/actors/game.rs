@@ -1,10 +1,9 @@
 use actix::prelude::*;
 // use std::process::{Command, Stdio}
 
-use crate::communication::{
-    server::{Cleanup, SendMessage, Server},
-    std_format_msgs::WrappedResult,
-};
+use crate::{actors::server::SendMessage, std_format_msgs::WrappedResult};
+
+use super::server::{Cleanup, Server};
 
 pub struct Game {
     id: usize,

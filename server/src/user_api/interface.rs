@@ -1,12 +1,11 @@
-use crate::communication::server::{self, UpdateSessionData};
-use crate::communication::session::SessionContext;
-use crate::communication::std_format_msgs::{WrappedContent, WrappedResult};
+use crate::actors::server::{self, UpdateSessionData};
+use crate::actors::session::SessionContext;
+use crate::std_format_msgs::{WrappedContent, WrappedResult};
 use serde::de::Error;
-use serde::Deserialize;
 use serde_json::Error as JsonError;
 
 use super::auth;
-use super::auth::LoginPayload;
+use crate::std_format_msgs::content_templates;
 
 pub fn handle(ctx: &mut SessionContext) -> Option<()> {
     let res = match ctx.topic.as_str() {
@@ -24,7 +23,7 @@ pub fn handle(ctx: &mut SessionContext) -> Option<()> {
 }
 
 fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: WrappedContent<LoginPayload> = serde_json::from_str(&ctx.msg)?;
+    let msg: WrappedContent<content_templates::Login> = serde_json::from_str(&ctx.msg)?;
 
     let username = msg.content.username.clone();
     match auth::login(msg.content) {
@@ -47,7 +46,7 @@ fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
 }
 
 fn handle_signup(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: WrappedContent<LoginPayload> = serde_json::from_str(&ctx.msg)?;
+    let msg: WrappedContent<content_templates::Login> = serde_json::from_str(&ctx.msg)?;
 
     match auth::signup(msg.content.clone()) {
         Ok(success) => {
@@ -64,17 +63,12 @@ fn handle_signup(ctx: &mut SessionContext) -> Result<(), JsonError> {
     Ok(())
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct PlayerNamePayload {
-    player: String,
-}
-
 fn handle_newgame(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: WrappedContent<PlayerNamePayload> = serde_json::from_str(&ctx.msg)?;
+    let msg: WrappedContent<content_templates::Username> = serde_json::from_str(&ctx.msg)?;
 
     ctx.session.server_addr.do_send(server::API::NewGame(
         ctx.session.username.clone().unwrap_or("".to_string()),
-        msg.content.player,
+        msg.content.username,
     ));
 
     Ok(())

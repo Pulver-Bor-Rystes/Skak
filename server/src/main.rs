@@ -8,12 +8,10 @@ use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use actix_web_actors::ws;
-use communication::{server::Server, session::Session};
+use actors::{server::Server, session::Session};
 
-// mod game_api;
 mod actors;
-mod communication;
-mod security;
+mod std_format_msgs;
 mod user_api;
 
 async fn index() -> impl Responder {
@@ -35,6 +33,7 @@ async fn websocket(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
     println!("starting HTTP server at http://localhost:4000");
 
     let server = Server::new().start();

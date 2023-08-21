@@ -1,4 +1,4 @@
-use crate::security;
+use pwhash::bcrypt;
 use random_string::generate;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -26,7 +26,7 @@ impl Cookie {
 
     pub fn password(password: &str) -> Cookie {
         Cookie {
-            hash: security::hash(password),
+            hash: bcrypt::hash(password).expect("failed to hash password"),
             is_password: true,
         }
     }
