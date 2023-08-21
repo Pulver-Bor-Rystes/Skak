@@ -1,7 +1,7 @@
 use actix::prelude::*;
 // use std::process::{Command, Stdio}
 
-use crate::{actors::server::SendMessage, std_format_msgs::WrappedResult};
+use crate::{actors::server::SendMessage, std_format_msgs::OutgoingWsMsg};
 
 use super::server::{Cleanup, Server};
 
@@ -48,7 +48,7 @@ impl Actor for Game {
 
         self.srv.do_send(SendMessage::To(
             vec![white, black],
-            WrappedResult::content("state", fen),
+            OutgoingWsMsg::content("state", fen),
         ));
     }
 
@@ -72,7 +72,7 @@ impl Handler<API> for Game {
                 let fen = self.fen.clone();
                 self.srv.do_send(SendMessage::To(
                     vec![username],
-                    WrappedResult::content("state", fen),
+                    OutgoingWsMsg::content("state", fen),
                 ));
             }
         }

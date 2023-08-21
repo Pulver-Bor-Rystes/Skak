@@ -1,6 +1,6 @@
 use crate::actors::server::{self, UpdateSessionData};
 use crate::actors::session::SessionContext;
-use crate::std_format_msgs::{WrappedContent, WrappedResult};
+use crate::std_format_msgs::{IncomingWsMsg, OutgoingWsMsg};
 use serde::de::Error;
 use serde_json::Error as JsonError;
 
@@ -23,7 +23,7 @@ pub fn handle(ctx: &mut SessionContext) -> Option<()> {
 }
 
 fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: WrappedContent<content_templates::Login> = serde_json::from_str(&ctx.msg)?;
+    let msg: IncomingWsMsg<content_templates::Login> = serde_json::from_str(&ctx.msg)?;
 
     let username = msg.content.username.clone();
     match auth::login(msg.content) {
@@ -33,38 +33,38 @@ fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
                 username.clone(),
             ));
             ctx.socket
-                .text(WrappedResult::content(&ctx.topic, success).serialize());
+                .text(OutgoingWsMsg::content(&ctx.topic, success).serialize());
 
             ctx.session.username = Some(username);
         }
         Err(err) => ctx
             .socket
-            .text(WrappedResult::error(&ctx.topic, err).serialize()),
+            .text(OutgoingWsMsg::error(&ctx.topic, err).serialize()),
     };
 
     Ok(())
 }
 
 fn handle_signup(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: WrappedContent<content_templates::Login> = serde_json::from_str(&ctx.msg)?;
+    let msg: IncomingWsMsg<content_templates::Login> = serde_json::from_str(&ctx.msg)?;
 
     match auth::signup(msg.content.clone()) {
         Ok(success) => {
             ctx.socket
-                .text(WrappedResult::content(&ctx.topic, success).serialize());
+                .text(OutgoingWsMsg::content(&ctx.topic, success).serialize());
 
             ctx.session.username = Some(msg.content.username);
         }
         Err(err) => ctx
             .socket
-            .text(WrappedResult::error(&ctx.topic, err).serialize()),
+            .text(OutgoingWsMsg::error(&ctx.topic, err).serialize()),
     };
 
     Ok(())
 }
 
 fn handle_newgame(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: WrappedContent<content_templates::Username> = serde_json::from_str(&ctx.msg)?;
+    let msg: IncomingWsMsg<content_templates::Username> = serde_json::from_str(&ctx.msg)?;
 
     ctx.session.server_addr.do_send(server::API::NewGame(
         ctx.session.username.clone().unwrap_or("".to_string()),

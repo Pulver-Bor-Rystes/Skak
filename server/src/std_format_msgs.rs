@@ -2,60 +2,54 @@ use serde::{Deserialize, Serialize};
 
 /// Skal bruges til at sende beskeder tilbage til klienten
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct WrappedResult<M = String> {
+pub struct OutgoingWsMsg<M = serde_json::Value> {
     pub topic: String,
-    pub payload: Payload<M>,
+    pub payload: ResultContent<M>,
 }
 
 /// Skal bruges til at forstå beskeder fra klienten
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct WrappedContent<M = String> {
+pub struct IncomingWsMsg<M = serde_json::Value> {
     pub topic: String,
     pub content: M,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Payload<M = String> {
+pub struct ResultContent<M = serde_json::Value> {
     pub result: bool,
     pub content: M,
 }
 
-impl<M> WrappedResult<M>
+impl<M> OutgoingWsMsg<M>
 where
     M: Serialize + std::marker::Send + std::fmt::Debug,
 {
-    pub fn content(topic: impl ToString, content: M) -> WrappedResult<M> {
-        WrappedResult {
+    /// Laver en ny OutgoingWsMsg med givent content, hvor result er true
+    pub fn content(topic: impl ToString, content: M) -> OutgoingWsMsg<M> {
+        OutgoingWsMsg {
             topic: topic.to_string(),
-            payload: Payload {
+            payload: ResultContent {
                 result: true,
                 content,
             },
         }
     }
 
-    pub fn error(topic: impl ToString, content: M) -> WrappedResult<M> {
-        WrappedResult {
+    /// Laver en ny OutgoingWsMsg med givent content, hvor result er false
+    pub fn error(topic: impl ToString, content: M) -> OutgoingWsMsg<M> {
+        OutgoingWsMsg {
             topic: topic.to_string(),
-            payload: Payload {
+            payload: ResultContent {
                 result: false,
                 content,
             },
         }
     }
 
+    /// Laver OutgoingWsMsg om til JSON
     pub fn serialize(&self) -> String {
         serde_json::to_string(self).expect("Failed to serialize")
     }
-}
-
-/// For deserialization, når vi kun vil kende topic!
-/// Bruges kun én gang!
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct TopicMsg {
-    pub topic: String,
-    pub content: serde_json::Value,
 }
 
 // En masse templates når man skal parse en besked fra klienten

@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use crate::{
     actors::server::UpdateSessionData,
-    std_format_msgs::{TopicMsg, WrappedResult},
+    std_format_msgs::{IncomingWsMsg, OutgoingWsMsg},
     user_api,
 };
 
@@ -97,7 +97,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                 self.hb = Instant::now();
             }
             ws::Message::Text(text) => {
-                let parsed: Result<TopicMsg, JsonErr> = serde_json::from_str(&text);
+                let parsed: Result<IncomingWsMsg, JsonErr> = serde_json::from_str(&text);
 
                 // vi vil gerne kende topic, så resten af vores api hurtigt kan
                 // finde ud af om de skal håndterer beskeden!
@@ -141,7 +141,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                 if !is_handled {
                     println!("message was not handled: {:?}", text);
                     ac.socket
-                        .text(WrappedResult::error(ac.topic, "was not handled").serialize());
+                        .text(OutgoingWsMsg::error(ac.topic, "was not handled").serialize());
                 }
 
                 // user_api::interface::handle(&mut ac);

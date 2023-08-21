@@ -1,7 +1,7 @@
 use super::session::{DeployMessage, Session};
 use crate::{
     actors::game::{self, Game},
-    std_format_msgs::WrappedResult,
+    std_format_msgs::OutgoingWsMsg,
 };
 use actix::prelude::*;
 use rand::{self, rngs::ThreadRng, Rng};
@@ -83,7 +83,7 @@ impl Server {
             }
         }
 
-        self.deploy_msg(ids, WrappedResult::content("active_players", players));
+        self.deploy_msg(ids, OutgoingWsMsg::content("active_players", players));
     }
 
     fn find_game(&self, username: &str) -> Option<&GameData> {
