@@ -4,7 +4,7 @@
 #include "perft.h"
 #include <sstream>
 #include <vector>
-#include "C:\json\single_include\nlohmann\json.hpp"
+#include "libs/json.hpp"
 
 void uci::init()
 {
