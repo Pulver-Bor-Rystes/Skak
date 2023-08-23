@@ -11,7 +11,7 @@ int main()
 {
     movegen::init();
 
-    bool debugging = true;
+    bool debugging = false;
 
     if (debugging)
     {

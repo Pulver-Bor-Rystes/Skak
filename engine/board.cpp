@@ -110,6 +110,7 @@ long board::nodes = 0;
 void board::search_position(int depth) {
         int score = board::negamax(-50000, 50000, depth);
         
+        cout << "Found looking through " <<  board::nodes << " nodes" << endl;
         cout << "bestmove ";
         print::move(board::best_move);
         cout << endl;

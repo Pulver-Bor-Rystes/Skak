@@ -90,9 +90,12 @@ void uci::parse_json(string input)
     }
 }
 
-int uci::parse_position(string input)
+void uci::parse_position(string input)
 {
     int position_i = input.find("position");
+
+    cout << input << endl;
+    cout << position_i << endl;
 
     if (position_i != string::npos)
     {
@@ -171,7 +174,7 @@ void uci::parse_go(string input)
     }
 }
 
-int uci::parse_moves(string input)
+void uci::parse_moves(string input)
 {
 
     // Creates a stringstream from the input string
