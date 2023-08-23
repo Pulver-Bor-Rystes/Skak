@@ -24,7 +24,7 @@ void perft::test(int depth)
         copy_board();
         
         // make move
-        if (!board::make_move(move_list->array[move_count]))
+        if (!board::make_move(move_list->array[move_count], false))
             // skip to the next move
             continue;
         

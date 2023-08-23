@@ -491,8 +491,65 @@ namespace board
         }
     }
 
+    static inline int score_move(int move) {
+
+        // Initialized to P since en passant capture
+        // doesn't capture on target square
+        int target_piece = P;
+
+        // Score capture move
+        if(is_capture(move)) {
+            int start_piece, end_piece;
+            if(side == white) { start_piece = p; end_piece = k; }
+            else { start_piece = P; end_piece = K; }
+
+            for (int piece_type = start_piece; piece_type <= end_piece; piece_type++)
+            {
+                if (is_occupied(bitboards[piece_type], get_target(move))) {
+                    target_piece = piece_type;
+                }
+            }
+            
+            return mvv_lva[get_piece(move)][target_piece];
+        }
+
+        // Score quiet move
+        else {
+            return 0;
+        }
+    }
+
+    static inline int sort_moves(moves* move_list) {
+
+        int move_scores[move_list->size];
+
+        for (int i = 0; i < move_list->size; i++)
+        {
+            move_scores[i] = score_move(move_list->array[i]);
+        }
+
+
+        for (int current_move = 0; current_move < move_list->size; current_move++)
+        {
+            for (int next_move = current_move + 1; next_move < move_list->size; next_move++)
+            {
+                if(move_scores[next_move] > move_scores[current_move]) {
+                     // swap scores
+                    int temp_score = move_scores[current_move];
+                    move_scores[current_move] = move_scores[next_move];
+                    move_scores[next_move] = temp_score;
+                    
+                    // swap moves
+                    int temp_move = move_list->array[current_move];
+                    move_list->array[current_move] = move_list->array[next_move];
+                    move_list->array[next_move] = temp_move;
+                }
+            }
+        }
+    }
+
     // Used to make a move on the board
-    static inline int make_move(int move, bool only_captures = false)
+    static inline int make_move(int move, bool only_captures)
     {
         if (only_captures)
         {
@@ -644,11 +701,62 @@ namespace board
     // Ply denotes the amount of half moves
     extern int ply;
     extern int best_move;
+    extern long nodes;
+
+    static inline int quiescence(int alpha, int beta) {
+        ++nodes;
+
+        int evaluation = eval();
+
+        if (evaluation >= beta) {
+            return beta;
+        }
+
+        if(evaluation > alpha) {
+            alpha = evaluation;
+        }
+
+        moves move_list[1];
+        generate_moves(move_list);
+        sort_moves(move_list);
+
+        for (int i = 0; i < move_list->size; i++)
+        {
+            copy_board();
+
+            ++ply;
+
+            // If move is illegal or not a capture
+            if(!make_move(move_list->array[i], true)) {
+                --ply;
+                continue;
+            }
+
+            //Recursively determines if capture chain is beneficial
+            int score = -quiescence(-beta, -alpha);
+            --ply;
+
+            revert_board();
+            
+            if(score >= beta) {
+                return beta;
+            }
+
+            if(score > alpha) {
+                alpha = score;
+            }
+        }
+
+        return alpha;
+
+    }
 
     static inline int negamax(int alpha, int beta, int depth) {
         if(!depth) {
-            return eval();
+            return quiescence(alpha, beta);
         }
+
+        ++nodes;
 
         // Note whether king is currently in check 
         int in_check = is_square_attacked(
@@ -657,6 +765,8 @@ namespace board
                 movegen::get_ls1b(bitboards[k])), 
                 side ^ 1
         );
+
+        if(in_check) ++depth;
 
         // Keep track of the amount of legal moves
         int legal_moves = 0;
@@ -670,7 +780,8 @@ namespace board
         // Move list init and find all moves
         moves move_list[1];
         generate_moves(move_list);
-
+        sort_moves(move_list);
+        
         for (int i = 0; i < move_list->size; i++)
         {
             copy_board();
@@ -686,7 +797,8 @@ namespace board
             // Else
             ++legal_moves;
 
-            // Update score recursively
+            // Update score recursively with the negamax property:
+            // https://www.chessprogramming.org/Negamax
             int score = -negamax(-beta, -alpha, depth - 1);
             --ply;
 
@@ -709,7 +821,8 @@ namespace board
         if(!legal_moves) {
             // King is in check
             if(in_check) {
-                return -49000 + ply;
+                // "+ ply" prioritizes shorter checkmates
+                return -49000 + ply; 
             }
 
             // King is not in check (stalemate)
@@ -726,4 +839,6 @@ namespace board
     }
 
     void search_position(int depth);
+
+    
 };

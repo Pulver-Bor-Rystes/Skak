@@ -105,12 +105,12 @@ void board::parse_fen(string fen) {
 
 int board::ply = 0;
 int board::best_move = 0;
-
+long board::nodes = 0;
 
 void board::search_position(int depth) {
-    int score = negamax(-50000, 50000, depth);
-
-    cout << "bestmove ";
-    print::move(best_move);
-    cout << endl;
-}
+        int score = board::negamax(-50000, 50000, depth);
+        
+        cout << "bestmove ";
+        print::move(board::best_move);
+        cout << endl;
+    }

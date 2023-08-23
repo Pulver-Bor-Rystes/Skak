@@ -4,22 +4,29 @@
 #include "perft.h"
 #include "uci.h"
 #include "utils.h"
+#include "board.h"
 
 
 int main()
 {
-    bool debugging = false;
+    movegen::init();
+
+    bool debugging = true;
 
     if (debugging)
     {
-        board::parse_fen(rook_position);
-        cout << board::eval();
+        board::parse_fen(tricky_position);
         print::game();
+
+        board::search_position(2);
+
+        cout << board::nodes << endl;
+        
+        
     }
 
     else
     {
-        movegen::init();
         uci::init();
     }
     return 0;

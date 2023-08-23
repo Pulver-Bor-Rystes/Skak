@@ -100,5 +100,5 @@ extern const int b_score[64];
 extern const int r_score[64];
 extern const int q_score[64];
 extern const int k_score[64];
-
 extern const int* piece_score[64];
+extern const int mvv_lva[12][12];

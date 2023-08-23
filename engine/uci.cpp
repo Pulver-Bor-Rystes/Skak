@@ -8,6 +8,7 @@
 
 void uci::init()
 {
+    uci::print_engine_info();
     uci::loop();
 }
 
@@ -96,12 +97,32 @@ int uci::parse_position(string input)
     if (position_i != string::npos)
     {
         int startpos_i = input.find("startpos");
+        int trickypos_i = input.find("trickypos");
+        int killerpos_i = input.find("killerpos");
+        int cmkpos_i = input.find("cmkpos");
+        int rookpos_i = input.find("rookpos");
         int fen_i = input.find("fen");
         int moves_i = input.find("moves");
         // Get position
         if (startpos_i != string::npos)
         {
             board::parse_fen(start_position);
+        }
+        else if(trickypos_i != string::npos) 
+        {
+            board::parse_fen(tricky_position);
+        }
+        else if(killerpos_i != string::npos) 
+        {
+            board::parse_fen(killer_position);
+        }
+        else if(cmkpos_i != string::npos) 
+        {
+            board::parse_fen(cmk_position);
+        }
+        else if(rookpos_i != string::npos) 
+        {
+            board::parse_fen(rook_position);
         }
         else if (fen_i != string::npos)
         {
@@ -168,7 +189,7 @@ int uci::parse_moves(string input)
     for (const string &str : substrings)
     {
         if (uci::parse_move(str))
-            board::make_move(uci::parse_move(str));
+            board::make_move(uci::parse_move(str), false);
     }
 }
 
