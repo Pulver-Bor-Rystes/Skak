@@ -28,7 +28,7 @@ namespace perft {
             copy_board();
 
             // Makes move and skips if illegal
-            if(!board::make_move(move_list->array[move_count], false)) continue;
+            if(!board::make_move(move_list->array[move_count])) continue;
 
             // Recursively calls itself with current position
             driver(depth-1);

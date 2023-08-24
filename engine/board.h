@@ -519,7 +519,7 @@ namespace board
         }
     }
 
-    static inline int sort_moves(moves* move_list) {
+    static inline void sort_moves(moves* move_list) {
 
         int move_scores[move_list->size];
 
@@ -549,20 +549,9 @@ namespace board
     }
 
     // Used to make a move on the board
-    static inline int make_move(int move, bool only_captures)
+    static inline int make_move(int move)
     {
-        if (only_captures)
-        {
-            if (is_capture(move))
-            {
-                make_move(move, false);
-            }
-            else
-                return 0;
-        }
-
-        else
-        {
+        
             // Reset the en passant square
             en_passant = no_sq;
 
@@ -673,7 +662,6 @@ namespace board
             // Otherwise, switch sides and return legal move
             side ^= 1;
             return 1;
-        }
     }
 
     static inline int eval()
@@ -727,7 +715,7 @@ namespace board
             ++ply;
 
             // If move is illegal or not a capture
-            if(!make_move(move_list->array[i], true)) {
+            if(!is_capture(move_list->array[i]) || !make_move(move_list->array[i])) {
                 --ply;
                 continue;
             }
@@ -789,7 +777,7 @@ namespace board
             ++ply;
 
             // If move is illegal
-            if(!make_move(move_list->array[i], false)) {
+            if(!make_move(move_list->array[i])) {
                 --ply;
                 continue;
             }
@@ -841,4 +829,4 @@ namespace board
     void search_position(int depth);
 
     
-};
+}

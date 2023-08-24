@@ -16,4 +16,4 @@ namespace rng
     unsigned int generate_32_bit();
     unsigned int generate_64_bit();
     
-};
+}

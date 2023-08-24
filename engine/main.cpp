@@ -18,16 +18,16 @@ int main()
         board::parse_fen(tricky_position);
         print::game();
 
-        board::search_position(2);
+        board::search_position(1);
 
-        cout << board::nodes << endl;
-        
-        
+        moves move_list[1];
+        board::generate_moves(move_list);
     }
 
     else
     {
         uci::init();
     }
+    
     return 0;
 }

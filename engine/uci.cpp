@@ -25,7 +25,7 @@ void uci::loop()
     while (true)
     {
         getline(cin, input);
-
+        
         if (input == "quit" || input == "exit")
         {
             break; // Exit the loop if the user enters "quit"
@@ -56,11 +56,11 @@ void uci::loop()
 void uci::parse_json(string input)
 {
     using json = nlohmann::json;
-    int json_i = input.find("json");
+    size_t json_i = input.find("json");
 
     if (json_i != string::npos)
     {
-        int movedata_i = input.find("movedata");
+        size_t movedata_i = input.find("movedata");
         if (movedata_i != string::npos)
         {
             moves move_list[1];
@@ -92,20 +92,17 @@ void uci::parse_json(string input)
 
 void uci::parse_position(string input)
 {
-    int position_i = input.find("position");
-
-    cout << input << endl;
-    cout << position_i << endl;
+    size_t position_i = input.find("position");
 
     if (position_i != string::npos)
     {
-        int startpos_i = input.find("startpos");
-        int trickypos_i = input.find("trickypos");
-        int killerpos_i = input.find("killerpos");
-        int cmkpos_i = input.find("cmkpos");
-        int rookpos_i = input.find("rookpos");
-        int fen_i = input.find("fen");
-        int moves_i = input.find("moves");
+        size_t startpos_i = input.find("startpos");
+        size_t trickypos_i = input.find("trickypos");
+        size_t killerpos_i = input.find("killerpos");
+        size_t cmkpos_i = input.find("cmkpos");
+        size_t rookpos_i = input.find("rookpos");
+        size_t fen_i = input.find("fen");
+        size_t moves_i = input.find("moves");
         // Get position
         if (startpos_i != string::npos)
         {
@@ -144,13 +141,13 @@ void uci::parse_position(string input)
 
 void uci::parse_go(string input)
 {
-    int go_i = input.find("go");
+    size_t go_i = input.find("go");
 
     if (go_i != string::npos)
     {
-        int depth_i = input.find("depth");
-        int perft_i = input.find("perft");
-        int eval_i = input.find("eval");
+        size_t depth_i = input.find("depth");
+        size_t perft_i = input.find("perft");
+        size_t eval_i = input.find("eval");
         int depth = 5;
 
         if (depth_i != string::npos)
@@ -192,7 +189,7 @@ void uci::parse_moves(string input)
     for (const string &str : substrings)
     {
         if (uci::parse_move(str))
-            board::make_move(uci::parse_move(str), false);
+            board::make_move(uci::parse_move(str));
     }
 }
 
