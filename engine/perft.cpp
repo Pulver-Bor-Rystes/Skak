@@ -43,7 +43,7 @@ void perft::test(int depth)
         // print move
         printf("     move: %s%s%c  nodes: %ld\n", index_to_square[get_source(move_list->array[move_count])],
                                                  index_to_square[get_target(move_list->array[move_count])],
-                                                 get_promotion_piece(move_list->array[move_count]) ? promoted_pieces[get_promotion_piece(move_list->array[move_count])] : ' ',
+                                                 get_promotion_piece_type(move_list->array[move_count]) ? promoted_pieces[get_promotion_piece_type(move_list->array[move_count])] : ' ',
                                                  old_nodes);
     }
     

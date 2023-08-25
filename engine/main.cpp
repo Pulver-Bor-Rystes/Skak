@@ -11,17 +11,19 @@ int main()
 {
     movegen::init();
 
-    bool debugging = false;
+    int debugging = 0;
 
     if (debugging)
     {
         board::parse_fen(tricky_position);
         print::game();
 
-        board::search_position(1);
+        board::search_position(5);
 
         moves move_list[1];
         board::generate_moves(move_list);
+
+        cout << history_moves[B][a6];
     }
 
     else

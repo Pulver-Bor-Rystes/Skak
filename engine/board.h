@@ -491,6 +491,12 @@ namespace board
         }
     }
 
+    // Ply denotes the amount of half moves
+    extern int ply;
+    extern int best_move;
+    extern long nodes;
+
+
     static inline int score_move(int move) {
 
         // Initialized to P since en passant capture
@@ -510,12 +516,24 @@ namespace board
                 }
             }
             
-            return mvv_lva[get_piece(move)][target_piece];
+            return mvv_lva[get_piece(move)][target_piece] + 10000;
         }
 
         // Score quiet move
         else {
-            return 0;
+
+            // If move is a first priority killer move
+            if(move == killer_moves[0][ply]) {
+                return 9000;
+            }
+
+            else if(move == killer_moves[1][ply]) {
+                return 8000;
+            }
+
+            else {
+                return history_moves[get_piece(move)][get_target(move)];
+            }
         }
     }
 
@@ -560,11 +578,11 @@ namespace board
             int source = get_source(move);
             int target = get_target(move);
             int piece = get_piece(move);
-            int promotion_piece = get_promotion_piece(move);
+            int promotion_piece_type = get_promotion_piece_type(move);
 
             // Move piece
             pop_bit(bitboards[piece], source);
-            set_bit(bitboards[promotion_piece ? promotion_piece : piece], target);
+            set_bit(bitboards[promotion_piece_type ? promotion_piece_type : piece], target);
 
             // If the move is en passant, remove the en passant-ed piece
             if (is_en_passant(move))
@@ -686,10 +704,6 @@ namespace board
         return (side == white ? score : -score);
     }
 
-    // Ply denotes the amount of half moves
-    extern int ply;
-    extern int best_move;
-    extern long nodes;
 
     static inline int quiescence(int alpha, int beta) {
         ++nodes;
@@ -776,8 +790,10 @@ namespace board
 
             ++ply;
 
+            int current_move = move_list->array[i];
+
             // If move is illegal
-            if(!make_move(move_list->array[i])) {
+            if(!make_move(current_move)) {
                 --ply;
                 continue;
             }
@@ -791,16 +807,30 @@ namespace board
             --ply;
 
             revert_board();
-            
+
+            // If a new, better move has been found            
             if(score >= beta) {
+
+                // Stores killer move for current ply
+                killer_moves[1][ply] = killer_moves[0][ply];
+                killer_moves[0][ply] = current_move;
+
                 return beta;
             }
 
             if(score > alpha) {
+
+                // Stores history move depending on piece type and target square.
+                // The idea is to improve score slightly every time a specific
+                // move is seen to improve the position.
+                // Higher depths are rewarded more, since deeper calculation is
+                // generally more correct.
+                history_moves[get_piece(current_move)][get_target(current_move)] += depth;
+
                 alpha = score;
 
                 if(ply == 0) {
-                    current_best_move = move_list->array[i];
+                    current_best_move = current_move;
                 }
             }
         }

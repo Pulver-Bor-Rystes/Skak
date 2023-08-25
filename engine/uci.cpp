@@ -76,7 +76,7 @@ void uci::parse_json(string input)
                 move_data["source_square"] = index_to_square[get_source(move)];
                 move_data["target_square"] = index_to_square[get_target(move)];
                 move_data["piece_type"] = string(1, ascii_pieces[get_piece(move)]);
-                move_data["promotion_piece"] = string(1, ascii_pieces[get_promotion_piece(move)]);
+                move_data["promotion_piece_type"] = string(1, ascii_pieces[get_promotion_piece_type(move)]);
                 move_data["is_capture"] = is_capture(move) ? true : false;
                 move_data["is_double_pawn_push"] = is_double_pawn_push(move) ? true : false;
                 move_data["is_en_passant"] = is_en_passant(move) ? true : false;
@@ -148,7 +148,7 @@ void uci::parse_go(string input)
         size_t depth_i = input.find("depth");
         size_t perft_i = input.find("perft");
         size_t eval_i = input.find("eval");
-        int depth = 5;
+        int depth = 6;
 
         if (depth_i != string::npos)
         {
@@ -208,35 +208,35 @@ int uci::parse_move(string move_string)
         int current_move = move_list->array[move_count];
         if (source_square == get_source(current_move) && target_square == get_target(current_move))
         {
-            int promotion_piece = get_promotion_piece(current_move) % 6;
-            if (!promotion_piece)
+            int promotion_piece_type = get_promotion_piece_type(current_move) % 6;
+            if (!promotion_piece_type)
                 return current_move;
 
             switch (move_string[4])
             {
             case 'q':
-                if (promotion_piece == Q)
+                if (promotion_piece_type == Q)
                     return current_move;
                 else
                     return 0;
                 break;
 
             case 'r':
-                if (promotion_piece == R)
+                if (promotion_piece_type == R)
                     return current_move;
                 else
                     return 0;
                 break;
 
             case 'b':
-                if (promotion_piece == B)
+                if (promotion_piece_type == B)
                     return current_move;
                 else
                     return 0;
                 break;
 
             case 'n':
-                if (promotion_piece == N)
+                if (promotion_piece_type == N)
                     return current_move;
                 else
                     return 0;

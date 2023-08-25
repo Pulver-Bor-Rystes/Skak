@@ -21,6 +21,9 @@ void board::parse_fen(string fen) {
     en_passant = no_sq;
     castle = 0;
 
+    memset(killer_moves, 0, sizeof(killer_moves));
+    memset(history_moves, 0, sizeof(history_moves));
+
     int i = 0;
     int square;
 
