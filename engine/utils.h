@@ -13,3 +13,13 @@ namespace print {
     void game();
     void attacked_squares(int side);
 }
+
+class Timer {
+public:
+    Timer();
+    void reset();
+    double get_time_passed();
+
+private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+};

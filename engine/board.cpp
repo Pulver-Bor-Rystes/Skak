@@ -111,11 +111,14 @@ int board::best_move = 0;
 long board::nodes = 0;
 
 void board::search_position(int depth) {
+    Timer timer;
+
     board::nodes = 0;
     int score = board::negamax(-50000, 50000, depth);
     
     cout << "Found looking through " <<  board::nodes << " nodes" << endl;
+    cout << "Task took: " << timer.get_time_passed() << " seconds." << endl;
     cout << "bestmove ";
     print::move(board::best_move);
-    cout << endl;
+    cout << "\n\n";
 }

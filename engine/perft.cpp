@@ -1,5 +1,6 @@
 #include "perft.h"
 #include "shorthands.h"
+#include "utils.h"
 
 long perft::nodes = 0;
 
@@ -15,8 +16,8 @@ void perft::test(int depth)
     board::generate_moves(move_list);
     
     // Init start time
-    auto startTime = chrono::high_resolution_clock::now();
-    
+    Timer timer;
+
     // Loop over generated moves
     for (int move_count = 0; move_count < move_list->size; move_count++)
     {   
@@ -50,7 +51,6 @@ void perft::test(int depth)
     // print results
     printf("\n    Depth: %d\n", depth);
     printf("    Nodes: %ld\n", nodes);
-    auto endTime = chrono::high_resolution_clock::now();
-    cout << "     Time: " << chrono::duration_cast<chrono::milliseconds>(endTime- startTime).count() << endl;
+    cout << "     Time: " << timer.get_time_passed() << endl;
 }
 

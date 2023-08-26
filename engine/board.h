@@ -810,10 +810,12 @@ namespace board
 
             // If a new, better move has been found            
             if(score >= beta) {
-
-                // Stores killer move for current ply
-                killer_moves[1][ply] = killer_moves[0][ply];
-                killer_moves[0][ply] = current_move;
+                
+                if(!is_capture(current_move)) {
+                    // Stores killer move for current ply
+                    killer_moves[1][ply] = killer_moves[0][ply];
+                    killer_moves[0][ply] = current_move;
+                }
 
                 return beta;
             }
@@ -825,7 +827,9 @@ namespace board
                 // move is seen to improve the position.
                 // Higher depths are rewarded more, since deeper calculation is
                 // generally more correct.
-                history_moves[get_piece(current_move)][get_target(current_move)] += depth;
+                if(!is_capture(current_move)) {
+                    history_moves[get_piece(current_move)][get_target(current_move)] += depth;
+                }
 
                 alpha = score;
 

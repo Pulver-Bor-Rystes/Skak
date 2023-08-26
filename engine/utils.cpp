@@ -109,3 +109,17 @@ void print::game() {
                                            (board::castle & bk) ? 'k' : '-',
                                            (board::castle & bq) ? 'q' : '-');
 }
+
+Timer::Timer() {
+    start_time = std::chrono::high_resolution_clock::now();
+}
+
+void Timer::reset() {
+    start_time = std::chrono::high_resolution_clock::now();
+}
+
+double Timer::get_time_passed() {
+    auto current_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = current_time - start_time;
+    return duration.count();
+}

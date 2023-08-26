@@ -219,3 +219,4 @@ const int mvv_lva[12][12] = {
 
 int killer_moves[2][246];
 int history_moves[12][64];
+

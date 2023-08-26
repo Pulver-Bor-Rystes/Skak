@@ -105,3 +105,4 @@ extern const int mvv_lva[12][12];
 
 extern int killer_moves[2][246];
 extern int history_moves[12][64];
+
