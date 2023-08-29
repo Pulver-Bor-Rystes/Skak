@@ -754,6 +754,8 @@ namespace board
     }
 
     static inline int negamax(int alpha, int beta, int depth) {
+        pv_length[ply] = ply;
+
         if(!depth) {
             return quiescence(alpha, beta);
         }
@@ -832,6 +834,16 @@ namespace board
                 }
 
                 alpha = score;
+
+                pv_table[ply][ply] = current_move;
+
+                for (int next_ply = ply + 1; next_ply < pv_length[ply+1]; next_ply++)
+                {
+                    pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+                }
+
+                pv_length[ply] = pv_length[ply+1];
+                
 
                 if(ply == 0) {
                     current_best_move = current_move;

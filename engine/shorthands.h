@@ -104,5 +104,6 @@ extern const int* piece_score[64];
 extern const int mvv_lva[12][12];
 
 extern int killer_moves[2][246];
-extern int history_moves[12][64];
-
+extern int history_moves[12][246];
+extern int pv_length[246];
+extern int pv_table[246][246];
