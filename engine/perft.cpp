@@ -51,6 +51,6 @@ void perft::test(int depth)
     // print results
     printf("\n    Depth: %d\n", depth);
     printf("    Nodes: %ld\n", nodes);
-    cout << "     Time: " << timer.get_time_passed() << endl;
+    cout << "     Time: " << timer.get_time_passed_millis() << " milliseconds" << endl;
 }
 

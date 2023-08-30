@@ -18,12 +18,8 @@ int main()
         board::parse_fen(tricky_position);
         print::game();
 
-        board::search_position(5);
+        board::search_position(7);
 
-        moves move_list[1];
-        board::generate_moves(move_list);
-
-        cout << history_moves[B][a6];
     }
 
     else

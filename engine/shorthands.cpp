@@ -221,3 +221,5 @@ int killer_moves[2][246];
 int history_moves[12][246];
 int pv_length[246];
 int pv_table[246][246];
+
+const int bound_wiggle_room = 50;

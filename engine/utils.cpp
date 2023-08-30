@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "board.h"
+#include "limits"
 
 void print::move(int move) {
     cout
@@ -118,8 +119,13 @@ void Timer::reset() {
     start_time = std::chrono::high_resolution_clock::now();
 }
 
-double Timer::get_time_passed() {
+double Timer::get_time_passed_millis() {
     auto current_time = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = current_time - start_time;
-    return duration.count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count();
 }
+
+Timer timer;
+
+bool stop_calculating = false;
+bool use_time = false;
+double stop_time = numeric_limits<double>::infinity();

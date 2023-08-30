@@ -148,7 +148,16 @@ void uci::parse_go(string input)
         size_t depth_i = input.find("depth");
         size_t perft_i = input.find("perft");
         size_t eval_i = input.find("eval");
+        size_t wtime_i = input.find("wtime");
+        size_t btime_i = input.find("btime");
+        size_t winc_i = input.find("winc");
+        size_t binc_i = input.find("binc");
         int depth = 6;
+        int inc = -1;
+        int time = -1;
+        int moves_to_go = 30;
+        use_time = false;
+        stop_time = numeric_limits<double>::infinity();
 
         if (depth_i != string::npos)
         {
@@ -167,7 +176,37 @@ void uci::parse_go(string input)
             return;
         }
 
-        board::search_position(depth);
+        if (wtime_i != string::npos && board::side == white)
+        {
+            time = stoi(input.substr(wtime_i + 6));
+        }
+        if (btime_i != string::npos && board::side == black)
+        {
+            time = stoi(input.substr(btime_i + 6));
+        }
+        if (winc_i != string::npos && board::side == white)
+        {
+            inc = stoi(input.substr(winc_i + 5));
+        }
+        if (binc_i != string::npos && board::side == black)
+        {
+            inc = stoi(input.substr(binc_i + 5));
+        }
+
+        if(time != -1) {
+            timer.reset();
+            use_time = true;
+
+            // - 100 is a small offset to counteract the
+            // inevitable delay after stop_time is set to true
+            stop_time = time / moves_to_go - 100 + inc;
+
+            board::search_position(64);
+        }
+
+        else {
+            board::search_position(depth);
+        }
     }
 }
 

@@ -107,3 +107,7 @@ extern int killer_moves[2][246];
 extern int history_moves[12][246];
 extern int pv_length[246];
 extern int pv_table[246][246];
+
+extern const int bound_wiggle_room;
+
+#define reduced_depth_factor 2

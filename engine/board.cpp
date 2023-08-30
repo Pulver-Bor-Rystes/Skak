@@ -117,12 +117,11 @@ void board::parse_fen(string fen)
 }
 
 int board::ply = 0;
-int board::best_move = 0;
 long board::nodes = 0;
 
 void board::search_position(int depth)
 {
-    Timer timer;
+    stop_calculating = false;
 
     // Resets helper arrays
     memset(killer_moves, 0, sizeof(killer_moves));
@@ -130,15 +129,39 @@ void board::search_position(int depth)
     memset(pv_length, 0, sizeof(pv_length));
     memset(pv_table, 0, sizeof(pv_table));
 
-
+    int alpha = -50000;
+    int beta = 50000;
+    int candidate_pv_table_copy[246][246];
+    int candidate_pv_length_copy[246];
+    
     for (int current_depth = 1; current_depth <= depth; current_depth++)
     {
+        if(stop_calculating) break;
+
+        memcpy(&candidate_pv_table_copy, &pv_table, sizeof(pv_table));
+        memcpy(&candidate_pv_length_copy, &pv_length, sizeof(pv_length));
+
         board::nodes = 0;
 
-        int score = board::negamax(-50000, 50000, current_depth);
+        int score = board::negamax(alpha, beta, current_depth);
 
-        cout << "Found looking through " << board::nodes << " nodes" << endl;
-        cout << "Task took: " << timer.get_time_passed() << " seconds." << endl;
+        
+        if(score <= alpha || score >= beta) {
+            alpha = -50000;
+            beta = 50000;
+            --current_depth;
+            continue;
+        }
+
+        alpha = score - bound_wiggle_room;
+        alpha = score + bound_wiggle_room;
+        if(!stop_calculating) {
+            cout << "Found best move at depth " << current_depth << " looking through " << board::nodes << " nodes" << endl;
+        }
+        else {
+            cout << "Interrupted by time at depth " << current_depth << " looking through " << board::nodes << " nodes" << endl;
+        }
+        cout << "Total time passed: " << timer.get_time_passed_millis() << " milliseconds." << endl;
         for (int i = 0; i < pv_length[0]; i++)
         {
             print::move(pv_table[0][i]);
@@ -148,6 +171,6 @@ void board::search_position(int depth)
     }
 
     cout << "bestmove ";
-    print::move(board::best_move);
+    print::move(candidate_pv_table_copy[0][0]);
     cout << "\n\n";
 }
