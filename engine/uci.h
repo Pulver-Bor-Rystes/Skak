@@ -9,8 +9,8 @@
 namespace uci {
     void init();
     void loop();
-    int parse_position(string input);
-    int parse_moves(string input);
+    void parse_position(string input);
+    void parse_moves(string input);
     int parse_move(string move_string);
     void parse_go(string input);
     void parse_json(string input);

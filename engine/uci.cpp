@@ -4,10 +4,11 @@
 #include "perft.h"
 #include <sstream>
 #include <vector>
-#include "C:\json\single_include\nlohmann\json.hpp"
+#include "libs/json.hpp"
 
 void uci::init()
 {
+    uci::print_engine_info();
     uci::loop();
 }
 
@@ -24,7 +25,7 @@ void uci::loop()
     while (true)
     {
         getline(cin, input);
-
+        
         if (input == "quit" || input == "exit")
         {
             break; // Exit the loop if the user enters "quit"
@@ -55,11 +56,11 @@ void uci::loop()
 void uci::parse_json(string input)
 {
     using json = nlohmann::json;
-    int json_i = input.find("json");
+    size_t json_i = input.find("json");
 
     if (json_i != string::npos)
     {
-        int movedata_i = input.find("movedata");
+        size_t movedata_i = input.find("movedata");
         if (movedata_i != string::npos)
         {
             moves move_list[1];
@@ -75,7 +76,7 @@ void uci::parse_json(string input)
                 move_data["source_square"] = index_to_square[get_source(move)];
                 move_data["target_square"] = index_to_square[get_target(move)];
                 move_data["piece_type"] = string(1, ascii_pieces[get_piece(move)]);
-                move_data["promotion_piece"] = string(1, ascii_pieces[get_promotion_piece(move)]);
+                move_data["promotion_piece_type"] = string(1, ascii_pieces[get_promotion_piece_type(move)]);
                 move_data["is_capture"] = is_capture(move) ? true : false;
                 move_data["is_double_pawn_push"] = is_double_pawn_push(move) ? true : false;
                 move_data["is_en_passant"] = is_en_passant(move) ? true : false;
@@ -89,19 +90,39 @@ void uci::parse_json(string input)
     }
 }
 
-int uci::parse_position(string input)
+void uci::parse_position(string input)
 {
-    int position_i = input.find("position");
+    size_t position_i = input.find("position");
 
     if (position_i != string::npos)
     {
-        int startpos_i = input.find("startpos");
-        int fen_i = input.find("fen");
-        int moves_i = input.find("moves");
+        size_t startpos_i = input.find("startpos");
+        size_t trickypos_i = input.find("trickypos");
+        size_t killerpos_i = input.find("killerpos");
+        size_t cmkpos_i = input.find("cmkpos");
+        size_t rookpos_i = input.find("rookpos");
+        size_t fen_i = input.find("fen");
+        size_t moves_i = input.find("moves");
         // Get position
         if (startpos_i != string::npos)
         {
             board::parse_fen(start_position);
+        }
+        else if(trickypos_i != string::npos) 
+        {
+            board::parse_fen(tricky_position);
+        }
+        else if(killerpos_i != string::npos) 
+        {
+            board::parse_fen(killer_position);
+        }
+        else if(cmkpos_i != string::npos) 
+        {
+            board::parse_fen(cmk_position);
+        }
+        else if(rookpos_i != string::npos) 
+        {
+            board::parse_fen(rook_position);
         }
         else if (fen_i != string::npos)
         {
@@ -120,14 +141,23 @@ int uci::parse_position(string input)
 
 void uci::parse_go(string input)
 {
-    int go_i = input.find("go");
+    size_t go_i = input.find("go");
 
     if (go_i != string::npos)
     {
-        int depth_i = input.find("depth");
-        int perft_i = input.find("perft");
-        int eval_i = input.find("eval");
-        int depth = 5;
+        size_t depth_i = input.find("depth");
+        size_t perft_i = input.find("perft");
+        size_t eval_i = input.find("eval");
+        size_t wtime_i = input.find("wtime");
+        size_t btime_i = input.find("btime");
+        size_t winc_i = input.find("winc");
+        size_t binc_i = input.find("binc");
+        int depth = 6;
+        int inc = -1;
+        int time = -1;
+        int moves_to_go = 30;
+        use_time = false;
+        stop_time = numeric_limits<double>::infinity();
 
         if (depth_i != string::npos)
         {
@@ -146,11 +176,41 @@ void uci::parse_go(string input)
             return;
         }
 
-        board::search_position(depth);
+        if (wtime_i != string::npos && board::side == white)
+        {
+            time = stoi(input.substr(wtime_i + 6));
+        }
+        if (btime_i != string::npos && board::side == black)
+        {
+            time = stoi(input.substr(btime_i + 6));
+        }
+        if (winc_i != string::npos && board::side == white)
+        {
+            inc = stoi(input.substr(winc_i + 5));
+        }
+        if (binc_i != string::npos && board::side == black)
+        {
+            inc = stoi(input.substr(binc_i + 5));
+        }
+
+        if(time != -1) {
+            timer.reset();
+            use_time = true;
+
+            // - 100 is a small offset to counteract the
+            // inevitable delay after stop_time is set to true
+            stop_time = time / moves_to_go - 100 + inc;
+
+            board::search_position(64);
+        }
+
+        else {
+            board::search_position(depth);
+        }
     }
 }
 
-int uci::parse_moves(string input)
+void uci::parse_moves(string input)
 {
 
     // Creates a stringstream from the input string
@@ -187,35 +247,35 @@ int uci::parse_move(string move_string)
         int current_move = move_list->array[move_count];
         if (source_square == get_source(current_move) && target_square == get_target(current_move))
         {
-            int promotion_piece = get_promotion_piece(current_move) % 6;
-            if (!promotion_piece)
+            int promotion_piece_type = get_promotion_piece_type(current_move) % 6;
+            if (!promotion_piece_type)
                 return current_move;
 
             switch (move_string[4])
             {
             case 'q':
-                if (promotion_piece == Q)
+                if (promotion_piece_type == Q)
                     return current_move;
                 else
                     return 0;
                 break;
 
             case 'r':
-                if (promotion_piece == R)
+                if (promotion_piece_type == R)
                     return current_move;
                 else
                     return 0;
                 break;
 
             case 'b':
-                if (promotion_piece == B)
+                if (promotion_piece_type == B)
                     return current_move;
                 else
                     return 0;
                 break;
 
             case 'n':
-                if (promotion_piece == N)
+                if (promotion_piece_type == N)
                     return current_move;
                 else
                     return 0;

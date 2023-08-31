@@ -1,34 +1,38 @@
 #include "utils.h"
 #include "board.h"
+#include "limits"
 
 void print::move(int move) {
     cout
         << index_to_square[get_source(move)]
         << index_to_square[get_target(move)]
-        << char(promoted_pieces[get_promotion_piece(move)]);
+        << char(promoted_pieces[get_promotion_piece_type(move)]);
 }
 
 void print::all_moves(moves *move_list) {
+
+    board::sort_moves(move_list);
 
     if(!move_list->size) {
         cout << "\n    No moves in move list!";
         return;
     }
 
-    cout << "\n    move    piece   capture   double    en passant    castling\n\n";
+    cout << "\n    move    piece   capture   double    en passant    castling    score\n\n";
 
     for (int move_count = 0; move_count < move_list->size; move_count++)
     {
         int move = move_list->array[move_count];
-        printf("    %s%s%c   %c       %d         %d         %d             %d\n", 
+        printf("    %s%s%c   %c       %d         %d         %d             %d           %d\n", 
         index_to_square[get_source(move)],
         index_to_square[get_target(move)],
-        promoted_pieces[get_promotion_piece(move)],
+        promoted_pieces[get_promotion_piece_type(move)],
         ascii_pieces[get_piece(move)],
         is_capture(move) ? 1 : 0,
         is_double_pawn_push(move) ? 1 : 0,
         is_en_passant(move) ? 1 : 0,
-        is_castling(move) ? 1 : 0);
+        is_castling(move) ? 1 : 0,
+        board::score_move(move));
     }
     
     cout << "\n    Total number of moves: " << move_list->size << "\n\n";
@@ -106,3 +110,22 @@ void print::game() {
                                            (board::castle & bk) ? 'k' : '-',
                                            (board::castle & bq) ? 'q' : '-');
 }
+
+Timer::Timer() {
+    start_time = std::chrono::high_resolution_clock::now();
+}
+
+void Timer::reset() {
+    start_time = std::chrono::high_resolution_clock::now();
+}
+
+double Timer::get_time_passed_millis() {
+    auto current_time = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count();
+}
+
+Timer timer;
+
+bool stop_calculating = false;
+bool use_time = false;
+double stop_time = numeric_limits<double>::infinity();

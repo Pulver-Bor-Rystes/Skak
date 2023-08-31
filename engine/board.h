@@ -1,5 +1,6 @@
 #pragma once
 #include "shorthands.h"
+#include "utils.h"
 #include "movegen.h"
 
 // Macros for copying and reversing the current board state
@@ -491,138 +492,217 @@ namespace board
         }
     }
 
-    // Used to make a move on the board
-    static inline int make_move(int move, bool only_captures = false)
+    // Ply denotes the amount of half moves
+    extern int ply;
+    extern long nodes;
+
+    static inline int score_move(int move)
     {
-        if (only_captures)
+
+        // Initialized to P since en passant capture
+        // doesn't capture on target square
+        int target_piece = P;
+
+        // Score capture move
+        if (is_capture(move))
         {
-            if (is_capture(move))
+            int start_piece, end_piece;
+            if (side == white)
             {
-                make_move(move, false);
+                start_piece = p;
+                end_piece = k;
             }
             else
-                return 0;
+            {
+                start_piece = P;
+                end_piece = K;
+            }
+
+            for (int piece_type = start_piece; piece_type <= end_piece; piece_type++)
+            {
+                if (is_occupied(bitboards[piece_type], get_target(move)))
+                {
+                    target_piece = piece_type;
+                    // for some reason, break makes it slower
+                    // break;
+                }
+            }
+
+            return mvv_lva[get_piece(move)][target_piece] + 10000;
         }
 
+        // Score quiet move
         else
         {
-            // Reset the en passant square
-            en_passant = no_sq;
 
-            copy_board();
-
-            int source = get_source(move);
-            int target = get_target(move);
-            int piece = get_piece(move);
-            int promotion_piece = get_promotion_piece(move);
-
-            // Move piece
-            pop_bit(bitboards[piece], source);
-            set_bit(bitboards[promotion_piece ? promotion_piece : piece], target);
-
-            // If the move is en passant, remove the en passant-ed piece
-            if (is_en_passant(move))
+            // If move is a first priority killer move
+            if (move == killer_moves[0][ply])
             {
-                if (side == white)
-                {
-                    pop_bit(bitboards[p], target + 8);
-                }
-                else
-                {
-                    pop_bit(bitboards[P], target - 8);
-                }
+                return 9000;
             }
 
-            // If move is a capture, remove the attacked piece
-            // Important else, which saves running time
-            else if (is_capture(move))
+            else if (move == killer_moves[1][ply])
             {
-                int start_piece, end_piece;
-                if (side == white)
-                {
-                    start_piece = p;
-                    end_piece = k;
-                }
-                else
-                {
-                    start_piece = P;
-                    end_piece = K;
-                }
-
-                for (int bb_piece = start_piece; bb_piece < end_piece; bb_piece++)
-                {
-                    if (is_occupied(bitboards[bb_piece], target))
-                    {
-
-                        pop_bit(bitboards[bb_piece], target);
-
-                        break;
-                    }
-                }
+                return 8000;
             }
 
-            // Set en passant square if a double pawn push was made
-            // Else is used to save time
-            else if (is_double_pawn_push(move))
+            else
             {
-                side == white ? en_passant = target + 8 : en_passant = target - 8;
+                return history_moves[get_piece(move)][get_target(move)];
             }
-
-            else if (is_castling(move))
-            {
-                switch (target)
-                {
-                case g1:
-                    // If king side
-                    pop_bit(bitboards[R], h1);
-                    set_bit(bitboards[R], f1);
-                    break;
-
-                case c1:
-                    // If queen side
-                    pop_bit(bitboards[R], a1);
-                    set_bit(bitboards[R], d1);
-                    break;
-
-                case g8:
-                    // If king side
-                    pop_bit(bitboards[r], h8);
-                    set_bit(bitboards[r], f8);
-                    break;
-
-                case c8:
-                    // If queen side
-                    pop_bit(bitboards[r], a8);
-                    set_bit(bitboards[r], d8);
-                    break;
-                }
-            }
-
-            // Update castling rights
-            castle &= movegen::castling_rights[source];
-            castle &= movegen::castling_rights[target];
-
-            // Update occupancies
-            update_occupancies();
-
-            // Check that the king is not in check
-            if (is_square_attacked((side == white) ? movegen::get_ls1b(bitboards[K]) : movegen::get_ls1b(bitboards[k]), side ^ 1))
-            {
-                // If it is, revert back and return illegal move
-                revert_board();
-                return 0;
-            }
-
-            // Otherwise, switch sides and return legal move
-            side ^= 1;
-            return 1;
         }
+    }
+
+    static inline void sort_moves(moves *move_list)
+    {
+
+        int move_scores[move_list->size];
+
+        for (int i = 0; i < move_list->size; i++)
+        {
+            move_scores[i] = score_move(move_list->array[i]);
+        }
+
+        for (int current_move = 0; current_move < move_list->size; current_move++)
+        {
+            for (int next_move = current_move + 1; next_move < move_list->size; next_move++)
+            {
+                if (move_scores[next_move] > move_scores[current_move])
+                {
+                    // swap scores
+                    int temp_score = move_scores[current_move];
+                    move_scores[current_move] = move_scores[next_move];
+                    move_scores[next_move] = temp_score;
+
+                    // swap moves
+                    int temp_move = move_list->array[current_move];
+                    move_list->array[current_move] = move_list->array[next_move];
+                    move_list->array[next_move] = temp_move;
+                }
+            }
+        }
+    }
+
+    // Used to make a move on the board
+    static inline int make_move(int move)
+    {
+
+        // Reset the en passant square
+        en_passant = no_sq;
+
+        copy_board();
+
+        int source = get_source(move);
+        int target = get_target(move);
+        int piece = get_piece(move);
+        int promotion_piece_type = get_promotion_piece_type(move);
+
+        // Move piece
+        pop_bit(bitboards[piece], source);
+        set_bit(bitboards[promotion_piece_type ? promotion_piece_type : piece], target);
+
+        // If the move is en passant, remove the en passant-ed piece
+        if (is_en_passant(move))
+        {
+            if (side == white)
+            {
+                pop_bit(bitboards[p], target + 8);
+            }
+            else
+            {
+                pop_bit(bitboards[P], target - 8);
+            }
+        }
+
+        // If move is a capture, remove the attacked piece
+        // Important else, which saves running time
+        else if (is_capture(move))
+        {
+            int start_piece, end_piece;
+            if (side == white)
+            {
+                start_piece = p;
+                end_piece = k;
+            }
+            else
+            {
+                start_piece = P;
+                end_piece = K;
+            }
+
+            for (int bb_piece = start_piece; bb_piece < end_piece; bb_piece++)
+            {
+                if (is_occupied(bitboards[bb_piece], target))
+                {
+
+                    pop_bit(bitboards[bb_piece], target);
+
+                    break;
+                }
+            }
+        }
+
+        // Set en passant square if a double pawn push was made
+        // Else is used to save time
+        else if (is_double_pawn_push(move))
+        {
+            side == white ? en_passant = target + 8 : en_passant = target - 8;
+        }
+
+        else if (is_castling(move))
+        {
+            switch (target)
+            {
+            case g1:
+                // If king side
+                pop_bit(bitboards[R], h1);
+                set_bit(bitboards[R], f1);
+                break;
+
+            case c1:
+                // If queen side
+                pop_bit(bitboards[R], a1);
+                set_bit(bitboards[R], d1);
+                break;
+
+            case g8:
+                // If king side
+                pop_bit(bitboards[r], h8);
+                set_bit(bitboards[r], f8);
+                break;
+
+            case c8:
+                // If queen side
+                pop_bit(bitboards[r], a8);
+                set_bit(bitboards[r], d8);
+                break;
+            }
+        }
+
+        // Update castling rights
+        castle &= movegen::castling_rights[source];
+        castle &= movegen::castling_rights[target];
+
+        // Update occupancies
+        update_occupancies();
+
+        // Check that the king is not in check
+        if (is_square_attacked((side == white) ? movegen::get_ls1b(bitboards[K]) : movegen::get_ls1b(bitboards[k]), side ^ 1))
+        {
+            // If it is, revert back and return illegal move
+            revert_board();
+            return 0;
+        }
+
+        // Otherwise, switch sides and return legal move
+        side ^= 1;
+        return 1;
     }
 
     static inline int eval()
     {
         U64 bitboard_copy;
-        int square; 
+        int square;
         int score = 0;
 
         // White pieces
@@ -641,35 +721,31 @@ namespace board
         return (side == white ? score : -score);
     }
 
-    // Ply denotes the amount of half moves
-    extern int ply;
-    extern int best_move;
-
-    static inline int negamax(int alpha, int beta, int depth) {
-        if(!depth) {
-            return eval();
+    static inline int quiescence(int alpha, int beta)
+    {
+        // Check if command should terminate based on time spend calculating
+        if (!(nodes % 4000))
+        {
+            check_if_time_is_up();
         }
 
-        // Note whether king is currently in check 
-        int in_check = is_square_attacked(
-            (side == white ? 
-                movegen::get_ls1b(bitboards[K]) : 
-                movegen::get_ls1b(bitboards[k])), 
-                side ^ 1
-        );
+        ++nodes;
 
-        // Keep track of the amount of legal moves
-        int legal_moves = 0;
+        int evaluation = eval();
 
-        // Init current candidate move
-        int current_best_move;
+        if (evaluation >= beta)
+        {
+            return beta;
+        }
 
-        // Current old alpha value is updated
-        int old_alpha = alpha;
+        if (evaluation > alpha)
+        {
+            alpha = evaluation;
+        }
 
-        // Move list init and find all moves
         moves move_list[1];
         generate_moves(move_list);
+        sort_moves(move_list);
 
         for (int i = 0; i < move_list->size; i++)
         {
@@ -677,8 +753,95 @@ namespace board
 
             ++ply;
 
+            // If move is illegal or not a capture
+            if (!is_capture(move_list->array[i]) || !make_move(move_list->array[i]))
+            {
+                --ply;
+                continue;
+            }
+
+            // Recursively determines if capture chain is beneficial
+            int score = -quiescence(-beta, -alpha);
+            --ply;
+
+            revert_board();
+
+            if(stop_calculating) return 0;
+
+            if (score >= beta)
+            {
+                return beta;
+            }
+
+            if (score > alpha)
+            {
+                alpha = score;
+            }
+        }
+
+        return alpha;
+    }
+
+    static inline int negamax(int alpha, int beta, int depth)
+    {
+        // Check if command should terminate based on time spend calculating
+        
+        pv_length[ply] = ply;
+
+        if (!depth)
+        {
+            return quiescence(alpha, beta);
+        }
+
+        ++nodes;
+
+        // Note whether king is currently in check
+        int in_check = is_square_attacked(
+            (side == white ? movegen::get_ls1b(bitboards[K]) : movegen::get_ls1b(bitboards[k])),
+            side ^ 1);
+
+        if (in_check)
+            ++depth;
+
+        // Null-move pruning
+        // https://web.archive.org/web/20071031095933/http://www.brucemo.com/compchess/programming/nullmove.htm
+        if (depth >= 3 && !in_check && ply)
+        {
+            copy_board();
+
+            // Imitates board as if it is opponent to move
+            side ^= 1;
+            en_passant = no_sq;
+
+            int score = -negamax(-beta, -beta + 1, depth - 1 - reduced_depth_factor);
+
+            revert_board();
+
+            if(stop_calculating) return 0;
+
+            if (score >= beta)
+                return beta;
+        }
+
+        // Keep track of the amount of legal moves
+        int legal_moves = 0;
+
+        // Move list init and find all moves
+        moves move_list[1];
+        generate_moves(move_list);
+        sort_moves(move_list);
+
+        for (int i = 0; i < move_list->size; i++)
+        {
+            copy_board();
+
+            ++ply;
+
+            int current_move = move_list->array[i];
+
             // If move is illegal
-            if(!make_move(move_list->array[i], false)) {
+            if (!make_move(current_move))
+            {
                 --ply;
                 continue;
             }
@@ -686,44 +849,75 @@ namespace board
             // Else
             ++legal_moves;
 
-            // Update score recursively
+            // Update score recursively with the negamax property:
+            // https://www.chessprogramming.org/Negamax
             int score = -negamax(-beta, -alpha, depth - 1);
             --ply;
 
             revert_board();
-            
-            if(score >= beta) {
+
+            if(stop_calculating) return 0;
+
+            // If a new, better move has been found
+            if (score >= beta)
+            {
+
+                if (!is_capture(current_move))
+                {
+                    // Stores killer move for current ply
+                    killer_moves[1][ply] = killer_moves[0][ply];
+                    killer_moves[0][ply] = current_move;
+                }
+
                 return beta;
             }
 
-            if(score > alpha) {
+            if (score > alpha)
+            {
+
+                // Stores history move depending on piece type and target square.
+                // The idea is to improve score slightly every time a specific
+                // move is seen to improve the position.
+                // Higher depths are rewarded more, since deeper calculation is
+                // generally more correct.
+                if (!is_capture(current_move))
+                {
+                    history_moves[get_piece(current_move)][get_target(current_move)] += depth;
+                }
+
                 alpha = score;
 
-                if(ply == 0) {
-                    current_best_move = move_list->array[i];
+                pv_table[ply][ply] = current_move;
+
+                for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
+                {
+                    pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
                 }
+
+                pv_length[ply] = pv_length[ply + 1];
             }
         }
-        
+
         // If there are no legal moves
-        if(!legal_moves) {
+        if (!legal_moves)
+        {
             // King is in check
-            if(in_check) {
+            if (in_check)
+            {
+                // "+ ply" prioritizes shorter checkmates
                 return -49000 + ply;
             }
 
             // King is not in check (stalemate)
-            else {
+            else
+            {
                 return 0;
             }
         }
 
-        if(old_alpha != alpha) {
-            best_move = current_best_move;
-        }
-        
         return alpha;
     }
 
     void search_position(int depth);
-};
+
+}

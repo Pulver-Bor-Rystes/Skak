@@ -58,7 +58,7 @@ struct moves
 #define get_source(move) (move & 0x3f)
 #define get_target(move) ((move & 0xfc0) >> 6)
 #define get_piece(move) ((move & 0xf000) >> 12)
-#define get_promotion_piece(move) ((move & 0xf0000) >> 16)
+#define get_promotion_piece_type(move) ((move & 0xf0000) >> 16)
 #define is_capture(move) (move & 0x100000)
 #define is_double_pawn_push(move) (move & 0x200000)
 #define is_en_passant(move) (move & 0x400000)
@@ -100,5 +100,14 @@ extern const int b_score[64];
 extern const int r_score[64];
 extern const int q_score[64];
 extern const int k_score[64];
-
 extern const int* piece_score[64];
+extern const int mvv_lva[12][12];
+
+extern int killer_moves[2][246];
+extern int history_moves[12][246];
+extern int pv_length[246];
+extern int pv_table[246][246];
+
+extern const int bound_wiggle_room;
+
+#define reduced_depth_factor 2
