@@ -1,20 +1,28 @@
-use crate::actors::server::{self, UpdateSessionData};
+use crate::actors::game::TimeFormat;
+use crate::actors::server;
 use crate::actors::session::SessionContext;
 use crate::std_format_msgs::{IncomingWsMsg, OutgoingWsMsg};
-use serde::de::Error;
 use serde_json::Error as JsonError;
 
 use super::auth;
 use crate::std_format_msgs::content_templates;
 
 pub fn handle(ctx: &mut SessionContext) -> Option<()> {
-    let res = match ctx.topic.as_str() {
-        "login" => handle_login(ctx),
-        "signup" => handle_signup(ctx),
-        "newgame" => handle_newgame(ctx),
-        "getstate" => handle_getstate(ctx),
-        _ => return None,
-    };
+    let res;
+
+    if ctx.is_logged_in() {
+        res = match ctx.topic.as_str() {
+            "newgame" => handle_newgame(ctx),
+            "getstate" => handle_getstate(ctx),
+            _ => return None,
+        }
+    } else {
+        res = match ctx.topic.as_str() {
+            "login" => handle_login(ctx),
+            "signup" => handle_signup(ctx),
+            _ => return None,
+        };
+    }
 
     match res {
         Ok(_) => Some(()),
@@ -28,10 +36,12 @@ fn handle_login(ctx: &mut SessionContext) -> Result<(), JsonError> {
     let username = msg.content.username.clone();
     match auth::login(msg.content) {
         Ok(success) => {
-            ctx.session.server_addr.do_send(UpdateSessionData::LoggedIn(
-                ctx.session.id,
-                username.clone(),
-            ));
+            ctx.session
+                .server_addr
+                .do_send(server::UpdateSessionData::LoggedIn(
+                    ctx.session.id,
+                    username.clone(),
+                ));
             ctx.socket
                 .text(OutgoingWsMsg::content(&ctx.topic, success).serialize());
 
@@ -64,27 +74,29 @@ fn handle_signup(ctx: &mut SessionContext) -> Result<(), JsonError> {
 }
 
 fn handle_newgame(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    let msg: IncomingWsMsg<content_templates::Username> = serde_json::from_str(&ctx.msg)?;
+    let msg: IncomingWsMsg<content_templates::NewGame> = serde_json::from_str(&ctx.msg)?;
 
-    ctx.session.server_addr.do_send(server::API::NewGame(
-        ctx.session.username.clone().unwrap_or("".to_string()),
-        msg.content.username,
-    ));
+    let format = TimeFormat::from(&msg.content.timeformat);
+
+    let username = ctx.session.username.as_ref().unwrap().clone();
+    let opponent = msg.content.username;
+
+    ctx.session
+        .server_addr
+        .do_send(server::UserAPI::NewGame(username, opponent, format.clone()));
 
     Ok(())
 }
 
 fn handle_getstate(ctx: &mut SessionContext) -> Result<(), JsonError> {
-    if ctx.session.username.is_none() {
-        return Err(Error::custom("not logged in!"));
-    }
-
+    println!("request: {:?}", ctx.topic);
+    
     let username = ctx.session.username.as_ref().unwrap().clone();
 
     // sig til serveren at vi gerne vil bede om en opdatering fra det spil vi er en del af!
     ctx.session
         .server_addr
-        .do_send(server::API::RequestGameState(username));
+        .do_send(server::UserAPI::RequestGameState(username));
 
     Ok(())
 }

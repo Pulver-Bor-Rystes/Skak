@@ -30,6 +30,7 @@
 
     // handle login reply
     $socket.on("login", (msg) => {
+        console.log(msg)
         if (msg.result) {
             $user.logged_in = true;
             $user.username = username;

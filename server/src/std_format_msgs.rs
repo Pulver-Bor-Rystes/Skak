@@ -62,8 +62,23 @@ pub mod content_templates {
     }
 
     #[derive(Deserialize, Debug, Clone)]
+    pub struct NewGame {
+        pub username: String,
+        pub timeformat: String,
+    }
+
+    #[derive(Deserialize, Debug, Clone)]
     pub struct Login {
         pub username: String,
         pub password: String,
+    }
+
+    impl Login {
+        pub fn new(username: impl ToString, password: impl ToString) -> Self {
+            Login {
+                username: username.to_string(),
+                password: password.to_string(),
+            }
+        }
     }
 }

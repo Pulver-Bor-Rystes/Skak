@@ -1,4 +1,5 @@
 **/*node_modules/
+**/*/target
 
 .DS_Store
 
@@ -10,4 +11,7 @@ CSM/index.js
 CSM/dist/
 web_a
 
-.vscode/
+**/*/.vscode/
+stockfish
+**/*/todo.md
+**/*/.env

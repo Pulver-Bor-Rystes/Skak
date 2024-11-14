@@ -12,10 +12,11 @@
 </script>
 
 <slot />
-<Login />
+
+<!-- <Login /> -->
 
 <style lang="postcss">
     :global(html) {
-      background-color: rgb(0, 0, 0);
+      background-color: rgb(217, 217, 217);
     }
 </style>

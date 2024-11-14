@@ -1,0 +1,45 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+
+@layer base {
+    h1 {
+        @apply text-4xl;
+    }
+
+    h2 {
+        @apply text-2xl;
+    }
+
+    h3 {
+        @apply text-xl;
+    }
+}
+
+
+@layer components {
+    .bg-layer {
+        @apply bg-[#ffffff6a];
+    }
+
+    .ps-1 {
+        @apply pl-1 pr-1;
+    }
+
+    .ps-2 {
+        @apply pl-2 pr-2;
+    }
+
+    .ps-3 {
+        @apply pl-3 pr-3;
+    }
+
+    .ps-4 {
+        @apply pl-4 pr-4;
+    }
+
+    .ps-5 {
+        @apply pl-5 pr-5;
+    }
+}

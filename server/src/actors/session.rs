@@ -2,7 +2,7 @@ use serde_json::Error as JsonErr;
 use std::time::Instant;
 
 use crate::{
-    actors::server::UpdateSessionData,
+    actors::server,
     std_format_msgs::{IncomingWsMsg, OutgoingWsMsg},
     user_api,
 };
@@ -40,7 +40,7 @@ impl Actor for Session {
 
         let addr = ctx.address();
         self.server_addr
-            .send(UpdateSessionData::Connect(addr.clone()))
+            .send(server::UpdateSessionData::Connect(addr.clone()))
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
@@ -59,7 +59,7 @@ impl Actor for Session {
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         // websocket forbindelsen stoppede
         self.server_addr
-            .do_send(UpdateSessionData::Disconnect(self.id));
+            .do_send(server::UpdateSessionData::Disconnect(self.id));
     }
 }
 
@@ -72,6 +72,12 @@ pub struct SessionContext<'a> {
     pub socket: &'a mut WebsocketContext<Session>,
     // pub client_id: usize,
     // pub client_username: String,
+}
+
+impl<'a> SessionContext<'a> {
+    pub fn is_logged_in(&self) -> bool {
+        self.session.username.is_some()
+    }
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
@@ -105,16 +111,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                     Ok(parsed) => parsed.topic,
                     Err(_) => "no topic".to_string(),
                 };
-
-                // let mut ac = SessionContext {
-                //     topic,
-                //     msg: text.to_string(),
-                //     srv: self.server_addr.clone(),
-                //     client: ctx,
-                //     is_handled: false,
-                //     client_id: self.id.clone(),
-                //     client_username: self.ctx.clclie,
-                // };
 
                 let mut ac = SessionContext {
                     topic,
@@ -163,28 +159,36 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
     fn finished(&mut self, _ctx: &mut Self::Context) {}
 }
 
-/// En event som når modtages sender en besked direkte til klienten!
 #[derive(Message, Debug)]
 #[rtype(result = "Result<bool, std::io::Error>")]
-pub enum DeployMessage<M: Serialize + std::marker::Send + std::fmt::Debug> {
-    IntoJson(M),
+pub enum API<M>
+where
+    M: Serialize + std::marker::Send,
+{
+    DeployMessage(M),
 }
 
-impl<M> Handler<DeployMessage<M>> for Session
+/// En event som når modtages sender en besked direkte til klienten!
+// #[derive(Message, Debug)]
+// #[rtype(result = "Result<bool, std::io::Error>")]
+// pub struct DeployMessage<M>(pub M)
+// where
+//     M: Serialize + std::marker::Send + std::fmt::Debug;
+
+impl<M> Handler<API<M>> for Session
 where
-    M: Serialize + std::marker::Send + std::fmt::Debug,
+    M: Serialize + std::marker::Send,
 {
     type Result = Result<bool, std::io::Error>;
 
-    fn handle(&mut self, msg: DeployMessage<M>, ctx: &mut Self::Context) -> Self::Result {
-        // I'm about to actually send this to the client browser!
-        let msg = match msg {
-            DeployMessage::IntoJson(msg) => {
-                serde_json::to_string(&msg).expect("json could not be parsed")
+    fn handle(&mut self, msg: API<M>, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            API::DeployMessage(msg) => {
+                // I'm about to actually send this to the client browser!
+                let msg = serde_json::to_string(&msg).expect("json could not be parsed");
+                ctx.text(msg);
             }
-        };
-
-        ctx.text(msg);
+        }
 
         Ok(true)
     }

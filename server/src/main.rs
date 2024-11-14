@@ -12,6 +12,7 @@ use actors::{server::Server, session::Session};
 
 mod actors;
 mod std_format_msgs;
+mod tests;
 mod user_api;
 
 async fn index() -> impl Responder {
@@ -33,7 +34,8 @@ async fn websocket(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+    // clears the console
+    // print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
     println!("starting HTTP server at http://localhost:4000");
 
     let server = Server::new().start();
@@ -41,6 +43,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(server.clone()))
+            // .app_data(Data::new(juules_engine.clone()))
+            // .app_data(Data::new(stockfish_engine.clone()))
             .service(web::resource("/").to(index))
             // Add the WebSocket route
             .service(web::resource("/api/ws").route(web::get().to(websocket)))
