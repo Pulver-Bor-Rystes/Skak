@@ -11,6 +11,10 @@ use std::{collections::HashMap, time::Duration};
 
 use super::engine;
 
+pub mod user_api;
+pub mod game_api;
+
+
 struct SessionData {
     addr: Addr<Session>,
     username: Option<String>,
@@ -57,10 +61,10 @@ impl Server {
         // let stockfish = Engine::new("stockfish/stockfish").start();
 
         let mut engines = HashMap::new();
-        // engines.insert(
-        //     "juules".to_string(),
-        //     Engine::new("engine/ChessPlusPlus").start(),
-        // );
+        engines.insert(
+            "juules".to_string(),
+            Engine::new("engine/ChessPlusPlus").start(),
+        );
 
         engines.insert(
             "stockfish".to_string(),
@@ -132,6 +136,8 @@ impl Actor for Server {
         println!("Server stopped");
     }
 }
+
+
 
 /// Et event andre `Actor`'s kan bruge til at sende en besked til en eller flere klienter
 #[allow(dead_code)]
@@ -241,142 +247,11 @@ impl Handler<UpdateSessionData> for Server {
     }
 }
 
-#[derive(Message)]
-#[rtype(result = "bool")]
-pub enum UserAPI {
-    /// String = Username
-    RequestGameState(String),
-    /// Parameter oversigt:
-    /// 1. Spillerens brugernavn
-    /// 2. Ønsket modstander som brugernavn
-    /// 3. Tidsformat
-    NewGame(String, String, TimeFormat),
-}
 
-impl Handler<UserAPI> for Server {
-    type Result = bool;
 
-    fn handle(&mut self, msg: UserAPI, ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            UserAPI::RequestGameState(username) => {
-                let game = self.find_game(&username);
 
-                if game.is_some() {
-                    game.unwrap().addr.do_send(game::API::GetState(username));
-                }
-            }
-            UserAPI::NewGame(p1, opponent, time_format) => {
-                let id = self.rng.gen::<usize>();
 
-                // er en af spillerene i gang med et spil?
-                if self.find_game(&opponent).is_some() || self.find_game(&p1).is_some() {
-                    return false;
-                }
-
-                let mut player2: Option<String> = None;
-
-                // tjekker først om det er en engine vi vil spille imod!
-                match self.engines.iter().find(|(name, _addr)| &&opponent == name) {
-                    Some(_) => player2 = Some(opponent.clone()),
-                    None => {}
-                }
-
-                // finder den første spiller der har det brugernavn
-                match self
-                    .clients
-                    .iter()
-                    .filter(|client| client.1.is_logged_in())
-                    .find(|client| client.1.username.as_ref().unwrap() == &opponent)
-                {
-                    Some(_) => player2 = Some(opponent),
-                    None => {}
-                }
-
-                if player2.is_none() {
-                    return false;
-                }
-
-                let p2 = player2.unwrap();
-
-                // start spillet
-                let game = Game::new(&id, &ctx.address(), &p1, &p2, &time_format);
-
-                // starter en actor og gemmer den :)
-                let addr = game.start();
-                self.games.insert(id, GameData { addr, p1, p2 });
-            }
-        }
-
-        true
-    }
-}
-
-#[derive(Message)]
-#[rtype(result = "bool")]
-pub enum GameAPI {
-    /// Fortæller brugeren eller engine at det er deres tur¨
-    /// 0. game id
-    /// 1. username
-    /// 2. fen string
-    /// 3. hvor meget tid spilleren har tilbage
-    YourTurn(usize, String, String, Duration),
-}
-
-impl Handler<GameAPI> for Server {
-    type Result = bool;
-
-    fn handle(&mut self, msg: GameAPI, ctx: &mut Self::Context) -> Self::Result {
-        match msg {
-            GameAPI::YourTurn(game_id, username, fen, time_left) => {
-                let user = self
-                    .clients
-                    .iter()
-                    .find(|(_id, sesh_data)| sesh_data.username == Some(username.clone()));
-
-                if user.is_some() {
-                    let id = user.unwrap().0;
-                    let last_move: Option<String> = None;
-
-                    self.deploy_msg(
-                        vec![id.to_owned()],
-                        OutgoingWsMsg::content("your turn", last_move),
-                    );
-
-                    return true;
-                }
-
-                let engine = self
-                    .engines
-                    .iter()
-                    .find(|(engine_name, _addr)| engine_name == &&username);
-
-                if engine.is_some() {
-                    let (_engine_name, addr) = engine.unwrap();
-                    addr.send(engine::API::Search(fen, time_left))
-                        .into_actor(self)
-                        .then(move |res, act, ctx| {
-                            match res {
-                                Ok(chess_move) => {
-                                    let game = act.games.get(&game_id);
-                                    match game {
-                                        Some(game) => {
-                                            game.addr.do_send(game::API::Move(chess_move))
-                                        }
-                                        None => {}
-                                    }
-                                }
-                                _ => ctx.stop(),
-                            }
-
-                            fut::ready(())
-                        })
-                        .wait(ctx);
-                }
-            }
-        }
-        true
-    }
-}
+// TODO: Fjern koden nedenunder og tilføj samme funktion direkte ind i game_api'en
 
 #[derive(Message)]
 #[rtype(result = "bool")]

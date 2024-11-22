@@ -14,6 +14,12 @@ pub struct IncomingWsMsg<M = serde_json::Value> {
     pub content: M,
 }
 
+/// Skal bruges til at forstå beskeder fra klienten
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct IncomingWsTopic {
+    pub topic: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ResultContent<M = serde_json::Value> {
     pub result: bool,

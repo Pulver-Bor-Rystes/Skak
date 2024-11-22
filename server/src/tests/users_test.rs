@@ -6,8 +6,8 @@ const PSW: &str = "kodeord1234";
 mod signup {
     use crate::std_format_msgs::content_templates;
     use crate::tests::users_test::{PSW, USR};
-    use crate::user_api::types::*;
-    use crate::user_api::*;
+    use crate::socket_user_api::types::*;
+    use crate::socket_user_api::*;
 
     #[test]
     fn username_taken() {
@@ -58,8 +58,8 @@ mod signup {
 
 #[cfg(test)]
 mod login {
-    use crate::{std_format_msgs::content_templates, user_api::types::*};
-    use crate::user_api::*;
+    use crate::{std_format_msgs::content_templates, socket_user_api::types::*};
+    use crate::socket_user_api::*;
 
     use super::{PSW, USR};
 

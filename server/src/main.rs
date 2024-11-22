@@ -13,7 +13,6 @@ use actors::{server::Server, session::Session};
 mod actors;
 mod std_format_msgs;
 mod tests;
-mod user_api;
 
 async fn index() -> impl Responder {
     HttpResponse::Ok()

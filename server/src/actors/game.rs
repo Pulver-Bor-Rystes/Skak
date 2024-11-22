@@ -5,6 +5,8 @@ use crate::{
 use actix::prelude::*;
 use std::time::Duration;
 
+use super::server::game_api::GameAPI;
+
 pub struct Game {
     id: usize,
 
@@ -78,7 +80,7 @@ impl Game {
             false => self.black.clone(),
         };
 
-        self.srv.do_send(server::GameAPI::YourTurn(
+        self.srv.do_send(GameAPI::YourTurn(
             self.id,
             turn,
             self.fen.clone(),

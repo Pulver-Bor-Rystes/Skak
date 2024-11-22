@@ -1,6 +1,9 @@
 import { writable, type Writable } from "svelte/store";
 import { browser } from "$app/environment";
 
+// enable to be sure that nothing goes wrong!
+const DEBUG_MSG = false;
+
 
 type Message = {
     topic: string,
@@ -15,12 +18,12 @@ type Payload = {
 
 
 class Socket {
-    ws: WebSocket | null;
+    private ws: WebSocket | null;
     open: boolean = false;
-    listeners: Map<string, (payload: any) => void> = new Map();
-    queue: string[] = [];
+    private listeners: Map<string, (payload: any) => void> = new Map();
+    private queue: string[] = [];
 
-    reopen_attempts = 0;
+    private reopen_attempts = 0;
 
     constructor() {
         this.listeners = new Map();
@@ -30,7 +33,7 @@ class Socket {
     }
 
 
-    new_socket() {
+    private new_socket() {
         this.reopen_attempts += 1;
         if (!browser) {
             this.ws = null
@@ -89,7 +92,7 @@ class Socket {
         this.send_queue();
     }
 
-    send_queue(count = 0) {
+    private send_queue(count = 0) {
         if (this.open) {
             while (this.queue.length > 0) {
                 this.ws?.send(this.queue.pop()!);
@@ -109,7 +112,7 @@ class Socket {
     }
 
     on(topic: string, cb: (payload: Payload) => void) {
-        if (this.listeners.has(topic)) {
+        if (this.listeners.has(topic) && DEBUG_MSG) {
             console.warn("Replacing listener for topic:", topic);
         }
         this.listeners.set(topic, cb);
@@ -117,7 +120,7 @@ class Socket {
 
 
 
-    extract_msg(evt: MessageEvent<any>) {
+    private extract_msg(evt: MessageEvent<any>) {
         let msg: {
             topic: string,
             payload: any

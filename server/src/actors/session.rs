@@ -1,11 +1,6 @@
 use serde_json::Error as JsonErr;
 use std::time::Instant;
-
-use crate::{
-    actors::server,
-    std_format_msgs::{IncomingWsMsg, OutgoingWsMsg},
-    user_api,
-};
+use crate::{actors::server, std_format_msgs::{IncomingWsMsg, OutgoingWsMsg}};
 
 use super::server::Server;
 use actix::prelude::*;
@@ -121,7 +116,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                 let mut is_handled = false;
 
                 // en række funktioner som kan håndterer en request!
-                let handlers = vec![user_api::interface::handle];
+                let handlers = vec![crate::socket_user_api::interface::handle];
 
                 // så snart en request er blevet håndteret bliver den ikke sendt videre!
                 for handle_fn in handlers {
