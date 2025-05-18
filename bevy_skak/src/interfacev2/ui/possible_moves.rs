@@ -37,7 +37,7 @@ pub fn spawn_highlights(
     let piece = selected_piece.single().unwrap();
 
     for valid_move in &valid_moves.0 {
-        if valid_move.from != piece.0 {
+        if valid_move.from() != piece.0 {
             continue;
         }
 
@@ -45,7 +45,7 @@ pub fn spawn_highlights(
             Name::new("Valid Move Hightlight"),
             ValidMove,
             Transform::default()
-                .with_translation(index_to_pixel_coords(valid_move.to, window_size.0).into(),)
+                .with_translation(index_to_pixel_coords(valid_move.to(), window_size.0).into(),)
                 .with_scale(Vec3::splat((window_size.0 / 16.0) / 64.0)),
             Visibility::default(),
             Sprite {

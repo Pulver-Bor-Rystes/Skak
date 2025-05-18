@@ -15,10 +15,9 @@ impl Plugin for ChessPlugin {
             .add_systems(Startup, (setup, setup_chessboard))
             .add_systems(Update, (
                 react_on_move,
-                list_new_moves,
+                // list_new_moves,
                 change_turn,
                 calc_valid_moves_on_turn_change,
-                play_move,
             ))
         ;
     }
@@ -26,24 +25,24 @@ impl Plugin for ChessPlugin {
 
 
 
-fn play_move(
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut PlayMove, &mut MoveHistory, &ValidMoves, &mut Turn), Changed<PlayMove>>,
-) {
-    if query.is_empty() { return }
-    let (entity, mut play_move, mut history, valid_moves, mut turn) = query.single_mut().unwrap();
+// fn play_move(
+//     mut commands: Commands,
+//     mut query: Query<(Entity, &mut MoveHistory, &ValidMoves, &mut Turn), Changed<PlayMove>>,
+// ) {
+//     if query.is_empty() { return }
+//     let (entity, mut play_move, mut history, valid_moves, mut turn) = query.single_mut().unwrap();
     
 
-    if let Some(mv) = &play_move.0 {
-        if valid_moves.0.contains(&mv) {
-            println!("playing move: {:?}", mv);
-            history.push(mv.clone());
+//     if let Some(mv) = &play_move.0 {
+//         if valid_moves.0.contains(&mv) {
+//             println!("playing move: {:?}", mv);
+//             history.push(mv.clone());
     
-            play_move.0 = None;
-            commands.entity(entity).insert(ChangeTurn);
-        }
-    }
-}
+//             play_move.0 = None;
+//             commands.entity(entity).insert(ChangeTurn);
+//         }
+//     }
+// }
 
 
 
@@ -53,7 +52,6 @@ fn setup_chessboard(mut commands: Commands) {
         MoveHistory(Vec::new()),
         Turn(ChessColor::White),
         ValidMoves(Vec::new()),
-        PlayMove(None),
     ));
 }
 
@@ -96,7 +94,7 @@ fn list_new_moves(moves: Query<(&ValidMoves, &Turn), Changed<ValidMoves>>) {
             // let from_i64 = index_144_to_64(mm.from as i32);
             // let to_i64 = index_144_to_64(mm.to as i32);
             
-            info!("{} -> {}", index_64_to_algebraic(mm.from), index_64_to_algebraic(mm.to))
+            info!("{} -> {}", index_64_to_algebraic(mm.from()), index_64_to_algebraic(mm.to()))
         }
     }
 }
@@ -111,17 +109,13 @@ fn calc_valid_moves_on_turn_change(
     chessboard: Query<&ChessBoard>,
     invalid_indexes: Res<InvalidIndexes>,
 ) {
-    if let Ok(turn) = turn.single() {
-        info!("Calculating valid moves...");
-        
-        
-        
+    if let Ok(turn) = turn.single() {        
         let mut valid_moves = valid_moves.single_mut().expect("");
         let chessboard = chessboard.single().expect("");
 
         valid_moves.clear();
 
-        let mut proposed_moves: Vec<ProposeMove> = Vec::new();
+        let mut proposed_moves: Vec<chess_types::ProposeMove> = Vec::new();
 
         
         let mut index: Index144 = Index144::from12(-1);
@@ -130,7 +124,7 @@ fn calc_valid_moves_on_turn_change(
 
             
             if let Some(piece) = piece {
-                let Piece { color, kind, has_moved } = piece;
+                let Piece { color, kind, has_moved: _ } = piece;
                 if *color != turn.0 { continue }                
 
                 match kind {
@@ -142,18 +136,17 @@ fn calc_valid_moves_on_turn_change(
 
                         use MoveRequirement::*;
 
-                        proposed_moves.push(ProposeMove { from: index, to: index.clone().up(direction).clone(), requires: [Pacifist].into() });
-                        proposed_moves.push(ProposeMove { from: index, to: index.clone().up(direction).up(direction).clone(), requires: [Pacifist, FirstTime, IsFree(index.clone().up(direction).s())].into() });
 
-                        proposed_moves.push(ProposeMove { from: index, to: index.clone().up(direction).dec(BoardType::Large).s(), requires: [HasToAttack].into() });
-                        proposed_moves.push(ProposeMove { from: index, to: index.clone().up(direction).inc(BoardType::Large).s(), requires: [HasToAttack].into() });
+                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).clone()).into(), requires: [Pacifist].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).up(direction).clone()).into(), requires: [Pacifist, FirstTime, IsFree(index.clone().up(direction).s())].into(), information: MoveInformation::PawnDoubleMove(index.clone().up(direction).clone()) });
 
-                        // if chessboard.0[new_index].is_none() {
-                        //     valid_moves.push(types::Move {
-                        //         from: index as usize,
-                        //         to: new_index,
-                        //     })
-                        // }
+                        // angrib
+                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).dec(BoardType::Large).s()).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).inc(BoardType::Large).s()).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
+
+                        // // tjek for en passant
+                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).dec(BoardType::Large).s()).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
+                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).inc(BoardType::Large).s()).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
                     },
                     _ => {}
                 }
@@ -166,9 +159,9 @@ fn calc_valid_moves_on_turn_change(
 
             for req in &proposal.requires {
                 not_worthy = not_worthy || match *req {
-                    MoveRequirement::FirstTime => chessboard.get(proposal.from).unwrap().has_moved,
+                    MoveRequirement::FirstTime => chessboard.get(proposal.movement.from).unwrap().has_moved,
                     MoveRequirement::HasToAttack => {
-                        let o_target = chessboard.get(proposal.to);
+                        let o_target = chessboard.get(proposal.movement.to);
 
                         if let Some(target) = o_target {
                             target.color == turn.0
@@ -178,16 +171,32 @@ fn calc_valid_moves_on_turn_change(
                         }
                     },
                     MoveRequirement::IsFree(req_index) => chessboard.get(req_index).is_some(),
-                    MoveRequirement::Pacifist => chessboard.pieces[proposal.to.u12()].is_some(),
+                    MoveRequirement::Pacifist => chessboard.pieces[proposal.movement.to.u12()].is_some(),
+                    MoveRequirement::EnPassant => {
+                        if let Some(en_passant_index) = &chessboard.en_passant {
+                            en_passant_index.to_attack != proposal.movement.to
+                        }
+                        else {
+                            true
+                        }
+                    },
                 };
             }
             
-            if !not_worthy && !invalid_indexes.contains(&(proposal.to)) {
-                valid_moves.push(chess_types::Move { from: proposal.from, to: proposal.to });
+
+            if !not_worthy && !invalid_indexes.contains(&(proposal.movement.to)) {
+                if proposal.movement.to.is_on_last_row() {
+                    // promotion
+                    valid_moves.push( proposal.into_move().set_promotion(Promotion::Rook) );
+                    valid_moves.push( proposal.into_move().set_promotion(Promotion::Bishop) );
+                    valid_moves.push( proposal.into_move().set_promotion(Promotion::Knight) );
+                    valid_moves.push( proposal.into_move().set_promotion(Promotion::Queen) );
+                }
+                else {
+                    valid_moves.push( proposal.into_move() );
+                }
             }
         }
-
-        info!("New Moves: {:?}", valid_moves);
     }
 }
 
@@ -234,8 +243,8 @@ impl ChessBoard {
                 None, None, Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
+                None, None, None, None, None, Some(Piece { kind: PieceType::Pawn, color: ChessColor::Black, has_moved: false }), None, None, None, None, None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
-                None, None, None, None, None, Some(Piece { color: ChessColor::Black, kind: PieceType::Pawn, ..default() }), None, None, None, None, None, None,
                 None, None, Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Pawn, ..default() }), None, None,
                 None, None, Some(Piece { color: ChessColor::White, kind: PieceType::Rook, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Knight, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Bishop, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Queen, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::King, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Bishop, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Knight, ..default() }), Some(Piece { color: ChessColor::White, kind: PieceType::Rook, ..default() }), None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
@@ -283,20 +292,62 @@ impl Piece {
 
 /// TODO! Skal laves om! for langsomt
 fn react_on_move(
+    mut commands: Commands,
     mut chessboard: Query<&mut ChessBoard>,
-    moves: Query<&MoveHistory, Changed<MoveHistory>>
+    query: Query<(Entity, &MoveHistory), Changed<MoveHistory>>
 ) {
     let mut chessboard = chessboard.single_mut().expect("");
-    if let Ok(moves) = moves.single() {
+    if let Ok((entity, moves)) = query.single() {
         if let Some(mv) = moves.0.last() {
-            if let Some(piece) = chessboard.get_mut(mv.from) {
+            if let Some(piece) = chessboard.get_mut(mv.from()) {
                 piece.has_moved = true;
             }
 
-            chessboard.pieces[mv.to.u12()] = chessboard.pieces[mv.from.u12()];
-            chessboard.pieces[mv.from.u12()] = None;
+            // ryk rundt på mere end bare brikken. feks. tårnet i en kongerokade
+            match &mv.extra {
+                Some(movement) => {
+                    chessboard.pieces[movement.to.u12()] = chessboard.pieces[movement.from.u12()];
+                    chessboard.pieces[movement.from.u12()] = None;
+                },
+                None => {},
+            }
+
+            // ryk brikken
+            chessboard.pieces[mv.to().u12()] = chessboard.pieces[mv.from().u12()];
+            chessboard.pieces[mv.from().u12()] = None;
+
+            if let Some(promote) = mv.promote {
+                let new_piece_kind = match promote {
+                    Promotion::Queen => PieceType::Queen,
+                    Promotion::Rook => PieceType::Rook,
+                    Promotion::Bishop => PieceType::Bishop,
+                    Promotion::Knight => PieceType::Knight,
+                };
+
+                if let Some(piece) = &mut chessboard.pieces[mv.to().u12()] {
+                    piece.kind = new_piece_kind;
+                }
+            }
+
+            match mv.information {
+                MoveInformation::None => {},
+                MoveInformation::PawnDoubleMove(to_attack) => chessboard.en_passant = Some(EnPassant {
+                    to_attack,
+                    to_remove: mv.to(),
+                }),
+                MoveInformation::EnPassant => {
+                    let en_passant = chessboard.en_passant.clone().unwrap();
+                    
+                    chessboard.pieces[en_passant.to_remove.u12()] = None;
+                    chessboard.en_passant = None;
+                },
+            }
+
+
+            commands.entity(entity).insert(ChangeTurn);
         }
     }
+
 }
 
 

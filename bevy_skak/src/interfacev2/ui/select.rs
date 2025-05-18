@@ -1,4 +1,4 @@
-use crate::{chess::chess_types::{Move, PlayMove}, extra::iter_len};
+use crate::{chess::chess_types::{MoveHistory, ValidMoves}, extra::iter_len};
 
 use super::*;
 
@@ -55,28 +55,31 @@ pub fn deselect_piece(
     mouse_btn: Res<ButtonInput<MouseButton>>,
     mut ev_writer: EventWriter<DeselectEvent>,
 
-    mut play_move: Query<&mut PlayMove>,
+    mut chessboard_query: Query<(&ValidMoves, &mut MoveHistory)>,
 ) {
     if iter_len(selected_piece.iter()) != 1 { return }
-    let (entity, mut index) = selected_piece.single_mut().unwrap();
+    let (entity, mut from_index) = selected_piece.single_mut().unwrap();
     
     if mouse_btn.just_released(MouseButton::Left) {
         commands.entity(entity).remove::<Selected>();
 
         if iter_len(hovered_tiles.iter()) == 1 {
-            if let Ok(tile) = hovered_tiles.single() {
-                info!("Trying to place at: {}", tile.0.str());
+            if let Ok(to_index) = hovered_tiles.single() {
+                info!("Trying to place at: {}", to_index.0.str());
 
-                if let Ok(mut play_move) = play_move.single_mut() {
-                    play_move.0 = Some(Move {
-                        from: index.0,
-                        to: tile.0,
-                    });
+                let (valid_moves, mut history) = chessboard_query.single_mut().unwrap();
+
+                for vm in &valid_moves.0 {
+                    if vm.to() == to_index.0 && vm.from() == from_index.0 {
+                        info!("Playing move!: {:?}", vm);
+                        history.push(vm.clone());
+                    }
                 }
+                
             }
         }
         
         ev_writer.write(DeselectEvent);
-        index.0 = index.0;
+        from_index.0 = from_index.0;
     }
 }
