@@ -50,6 +50,11 @@ impl Index144 {
 
     // Incrementers
 
+    pub fn add(&mut self, val: i32) -> &mut Self {
+        self.0 += val;
+        self
+    }
+
     pub fn down(&mut self, direction: i32) -> &mut Self {
         self.0 -= 12 * direction;
         self
@@ -140,9 +145,9 @@ impl Index144 {
     }
 
 
-    pub fn s(&self) -> Self {
-        self.clone()
-    }
+    // pub fn s(&self) -> Self {
+    //     self.clone()
+    // }
 }
 
 

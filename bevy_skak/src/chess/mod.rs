@@ -121,11 +121,16 @@ fn calc_valid_moves_on_turn_change(
         let mut index: Index144 = Index144::from12(-1);
         for piece in &chessboard.pieces {
             index.inc(BoardType::Large);
+            
 
             
             if let Some(piece) = piece {
                 let Piece { color, kind, has_moved: _ } = piece;
-                if *color != turn.0 { continue }                
+                if *color != turn.0 { continue }
+
+                use MoveRequirement::*;             
+
+
 
                 match kind {
                     PieceType::Pawn => {
@@ -134,28 +139,83 @@ fn calc_valid_moves_on_turn_change(
                             ChessColor::Black => 1,
                         };
 
-                        use MoveRequirement::*;
+                        
 
 
-                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).clone()).into(), requires: [Pacifist].into(), information: MoveInformation::None });
-                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).up(direction).clone()).into(), requires: [Pacifist, FirstTime, IsFree(index.clone().up(direction).s())].into(), information: MoveInformation::PawnDoubleMove(index.clone().up(direction).clone()) });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction)).into(), requires: [Pacifist].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).up(direction)).into(), requires: [Pacifist, FirstTime, IsFree(*index.clone().up(direction))].into(), information: MoveInformation::PawnDoubleMove(index.clone().up(direction).clone()) });
 
                         // angrib
-                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).dec(BoardType::Large).s()).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
-                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).inc(BoardType::Large).s()).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).dec(BoardType::Large)).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).inc(BoardType::Large)).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
 
                         // // tjek for en passant
-                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).dec(BoardType::Large).s()).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
-                        proposed_moves.push(ProposeMove { movement: (index, index.clone().up(direction).inc(BoardType::Large).s()).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).dec(BoardType::Large)).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).inc(BoardType::Large)).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
                     },
-                    _ => {}
+                    PieceType::Knight => {
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(24-1)).into(), requires: [].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(24+1)).into(), requires: [].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-24-1)).into(), requires: [].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-24+1)).into(), requires: [].into(), information: MoveInformation::None });
+
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(2-12)).into(), requires: [].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(2+12)).into(), requires: [].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-2-12)).into(), requires: [].into(), information: MoveInformation::None });
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-2+12)).into(), requires: [].into(), information: MoveInformation::None });
+                    },
+                    PieceType::King => {
+                        let directions = vec![1, -1, 12, -12, 12-1, 12+1, -12-1, -12+1];
+
+                        for dir in directions {
+                            proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(dir)).into(), requires: [].into(), information: MoveInformation::None });
+                        }
+                    },
+                    _ => {
+                        let directions = match *kind {
+                            PieceType::Rook => vec![1, -1, 12, -12],
+                            PieceType::Bishop => vec![12-1, 12+1, -12-1, -12+1],
+                            PieceType::Queen => vec![1, -1, 12, -12, 12-1, 12+1, -12-1, -12+1],
+                            _ => vec![],
+                        };
+
+                        for dir in directions {
+                            let mut target_index = index.clone();
+                            target_index.add(dir);
+
+                            while target_index.is_valid() {
+                                let mut break_after = false;
+                                
+                                if let Some(target_piece) = chessboard.get(target_index) {
+                                    if target_piece.color == *color {
+                                        break;
+                                    }
+                                    else {
+                                        break_after = true;
+                                    }
+                                }
+                                proposed_moves.push(ProposeMove { movement: (index, target_index).into(), requires: [].into(), information: MoveInformation::None });
+                                
+                                target_index.add(dir);
+
+
+                                if break_after { break }
+                            }
+                        }
+                    },
                 }
             }            
         }
 
 
         for proposal in &proposed_moves {
-            let mut not_worthy = false;
+            
+            // standard, må ikke dræbe ens egne
+            let mut not_worthy = if let Some(target_piece) = chessboard.get(proposal.movement.to) {
+                target_piece.color == chessboard.get(proposal.movement.from).unwrap().color
+            } else {
+                false
+            };
 
             for req in &proposal.requires {
                 not_worthy = not_worthy || match *req {
@@ -185,7 +245,7 @@ fn calc_valid_moves_on_turn_change(
             
 
             if !not_worthy && !invalid_indexes.contains(&(proposal.movement.to)) {
-                if proposal.movement.to.is_on_last_row() {
+                if proposal.movement.to.is_on_last_row() && chessboard.get(proposal.movement.from).unwrap().kind == PieceType::Pawn {
                     // promotion
                     valid_moves.push( proposal.into_move().set_promotion(Promotion::Rook) );
                     valid_moves.push( proposal.into_move().set_promotion(Promotion::Bishop) );
