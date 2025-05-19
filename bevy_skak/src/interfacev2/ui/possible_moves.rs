@@ -25,6 +25,7 @@ pub fn spawn_highlights(
     selected_piece: Query<&Index, (With<ChessPiece>, Added<Selected>)>,
     asset_server: Res<AssetServer>,
     window_size: Res<WindowSize>,
+    ui_orientation: Res<UIOrientation>,
 ) {
     if iter_len(selected_piece.iter()) != 1 {
         return;
@@ -45,7 +46,7 @@ pub fn spawn_highlights(
             Name::new("Valid Move Hightlight"),
             ValidMove,
             Transform::default()
-                .with_translation(index_to_pixel_coords(valid_move.to(), window_size.0).into(),)
+                .with_translation(index_to_pixel_coords(valid_move.to(), window_size.0, ui_orientation.0).into(),)
                 .with_scale(Vec3::splat((window_size.0 / 16.0) / 64.0)),
             Visibility::default(),
             Sprite {

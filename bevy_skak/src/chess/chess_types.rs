@@ -165,13 +165,13 @@ pub struct InvalidIndexes(pub HashSet<Index144>);
 
 // Components
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct ChessBoard {
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct EnPassant {
     pub to_attack: Index144,
     pub to_remove: Index144,
@@ -204,9 +204,10 @@ pub struct MoveHistory(pub Vec<Move>);
 #[derive(Component, Debug, Clone, PartialEq)]
 pub struct Move {
     pub movement: Movement,
-    pub extra: Option<Movement>,
     pub promote: Option<Promotion>,
     pub information: MoveInformation,
+    pub check: bool,
+    pub check_mate: bool,
 }
 
 
@@ -224,13 +225,6 @@ impl Move {
         let mut copy = self.clone();
 
         copy.promote = Some(promotion);
-        return copy;
-    }
-
-    pub fn set_extra(&self, extra: Movement) -> Self {
-        let mut copy = self.clone();
-
-        copy.extra = Some(extra);
         return copy;
     }
 }
@@ -254,7 +248,7 @@ impl From<(Index144, Index144)> for Movement {
 
 /// Pawn double move holder på feltet som blev sprunget over
 #[derive(Debug, Clone, PartialEq)]
-pub enum MoveInformation { None, PawnDoubleMove(Index144), EnPassant }
+pub enum MoveInformation { None, PawnDoubleMove(Index144), EnPassant, CastleKingSide, CastleQueenSide }
 
 
 
@@ -270,9 +264,10 @@ impl ProposeMove {
     pub fn into_move(&self) -> Move {
         Move {
             movement: self.movement.clone(),
-            extra: None,
             promote: None,
             information: self.information.clone(),
+            check: false,
+            check_mate: false,
         }
     }
 }

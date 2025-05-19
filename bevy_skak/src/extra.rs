@@ -13,10 +13,26 @@ pub fn index_to_coords(index: usize, board_size: usize) -> (usize, usize) {
 //     (x as f32, y as f32, 0.0)
 // }
 
-pub fn index_to_pixel_coords(index: Index144, window_size: f32) -> (f32, f32, f32) {
+pub fn index_to_pixel_coords(index: Index144, window_size: f32, ui_orientation: bool) -> (f32, f32, f32) {
+    if !ui_orientation {
+        index_to_pixel_coords_inverse(index, window_size)
+    }
+    else {
+        let tile_size = window_size / 8.0;
+        let x = (index.u8() % 8) as f32 * tile_size;
+        let y = (index.u8() / 8) as f32 * tile_size;
+    
+        let centered_x = x - window_size / 2.0 + tile_size / 2.0;
+        let centered_y = window_size / 2.0 - y - tile_size / 2.0;
+        
+        (centered_x, centered_y, 0.0)
+    }
+}
+
+pub fn index_to_pixel_coords_inverse(index: Index144, window_size: f32) -> (f32, f32, f32) {
     let tile_size = window_size / 8.0;
-    let x = (index.u8() % 8) as f32 * tile_size;
-    let y = (index.u8() / 8) as f32 * tile_size;
+    let x = (7.0 - (index.u8() % 8) as f32) * tile_size;
+    let y = (7 - (index.u8() / 8)) as f32 * tile_size;
 
     let centered_x = x - window_size / 2.0 + tile_size / 2.0;
     let centered_y = window_size / 2.0 - y - tile_size / 2.0;

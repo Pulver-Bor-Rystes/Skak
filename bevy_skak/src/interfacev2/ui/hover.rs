@@ -20,7 +20,7 @@ pub fn hover(
             if (*last_highlight).contains(&piece_entity) { continue }
             (*last_highlight).insert(piece_entity);
 
-            // info!("Hovering: {}", name);
+            info!("Hovering: {}", name);
             
             // tilføj komponent
             commands.entity(piece_entity).try_insert(Hover);

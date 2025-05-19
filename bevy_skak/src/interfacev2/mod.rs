@@ -24,10 +24,13 @@ impl Plugin for InterfacePlugin {
                 ..default()
             }))
             .add_event::<DeselectEvent>()
+            .add_event::<FlipUIEvent>()
+            .add_event::<ReRenderBoard>()
             .insert_resource(WindowSize(WINDOW_SIZE))
             .insert_resource(TileSize(64.0))
             .insert_resource(MousePosition(None))
-            .add_systems(Startup, setup_black_white_tiles)
+            .insert_resource(UIOrientation(true))
+            .add_systems(Startup, (setup_black_white_tiles, setup_camera))
             .add_systems(PreUpdate, (update_mouse_pos, remove_chess_pieces))
             .add_systems(Update, (
                 // ui
@@ -35,6 +38,9 @@ impl Plugin for InterfacePlugin {
                 ui::hover::hover,
                 spawn_hightlight_on_hovered,
                 (spawn_chess_pieces).chain(),
+                turn_ui_around,
+                on_turn_ui_around,
+                on_board_change,
 
                 // select
                 select_piece,

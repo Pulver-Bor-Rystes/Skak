@@ -1,5 +1,5 @@
 use bevy::{color::palettes::{css::{BEIGE, WHITE}, tailwind::{AMBER_100, GRAY_100}}, picking::pointer::PointerLocation, platform::collections::HashSet, prelude::*};
-use crate::{chess::chess_types::{BoardType, ChessBoard, Index144, InvalidIndexes}, extra::index_to_pixel_coords};
+use crate::{chess::chess_types::{BoardType, ChessBoard, Index144, InvalidIndexes, Turn}, extra::index_to_pixel_coords};
 use super::types::*;
 use select::*;
 
@@ -10,21 +10,61 @@ pub mod possible_moves;
 pub mod react_on_board_changes;
 
 
+#[derive(Event)]
+pub struct FlipUIEvent;
+
+#[derive(Event)]
+pub struct ReRenderBoard;
+
+#[derive(Resource)]
+pub struct UIOrientation(pub bool);
+
+
+pub fn setup_camera(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+
+
+pub fn turn_ui_around(mut ev: EventWriter<FlipUIEvent>, keys: Res<ButtonInput<KeyCode>>) {
+    if keys.just_pressed(KeyCode::KeyX) {
+        ev.write(FlipUIEvent);
+    }
+}
+
+
+pub fn on_turn_ui_around(
+    mut uio: ResMut<UIOrientation>,
+    mut ev: EventReader<FlipUIEvent>,
+    mut rerender_ev: EventWriter<ReRenderBoard>,
+    mut tiles: Query<&mut Index, With<Tile>>
+) {
+    for _ in ev.read() {
+        for mut tile in &mut tiles {
+            let v = tile.0.i12();
+            tile.0.set_12(143 - v);
+        }
+
+        uio.0 = !uio.0;
+        rerender_ev.write(ReRenderBoard);
+    }
+}
+
+
 pub fn setup_black_white_tiles(
     mut commands: Commands, 
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     window_size: Res<WindowSize>,
 ) {
-    commands.spawn(Camera2d);
-
     let tile_size = window_size.0 / 8.0;
     let mut color = false;
 
     let mut index = Index144::from_minus_one();
+    // let mut index = Index144::from12(144);
     for y in 0..8 as i32 {
         for x in 0..8 as i32 {
             index.inc(BoardType::Regular);
+            // index.dec(BoardType::Regular);
             
             if x != 0 {
                 color = !color;
@@ -68,12 +108,23 @@ pub fn setup_black_white_tiles(
 }
 
 
-pub fn remove_chess_pieces(
-    mut commands: Commands,
+
+pub fn on_board_change(
     board_change: Query<(), Changed<ChessBoard>>,
-    pieces: Query<Entity, With<ChessPiece>>,
+    mut ev: EventWriter<ReRenderBoard>,
 ) {
     if board_change.is_empty() { return }
+    ev.write(ReRenderBoard);
+}
+
+
+
+pub fn remove_chess_pieces(
+    mut commands: Commands,
+    ev: EventReader<ReRenderBoard>,
+    pieces: Query<Entity, With<ChessPiece>>,
+) {
+    if ev.is_empty() { return }
 
     for entity in &pieces {
         commands.entity(entity).despawn();
@@ -83,10 +134,13 @@ pub fn remove_chess_pieces(
 
 pub fn spawn_chess_pieces(
     mut commands: Commands,
-    board: Query<&ChessBoard, Changed<ChessBoard>>,
+    board: Query<&ChessBoard>,
     asset_server: Res<AssetServer>,
     window_size: Res<WindowSize>,
+    ui_orientation: Res<UIOrientation>,
+    ev: EventReader<ReRenderBoard>
 ) {
+    if ev.is_empty() { return }
     if board.is_empty() { return }
     let board = board.single().unwrap();
     
@@ -101,7 +155,7 @@ pub fn spawn_chess_pieces(
                 Index(index),
                 Transform::default()
                     .with_translation(
-                        index_to_pixel_coords(index, window_size.0).into(),
+                        index_to_pixel_coords(index, window_size.0, ui_orientation.0).into(),
                     ),
             )).id();
 
