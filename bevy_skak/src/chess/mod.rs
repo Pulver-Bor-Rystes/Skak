@@ -15,34 +15,12 @@ impl Plugin for ChessPlugin {
             .add_systems(Startup, (setup, setup_chessboard))
             .add_systems(Update, (
                 react_on_move,
-                // list_new_moves,
                 change_turn,
                 calc_valid_moves,
             ))
         ;
     }
 }
-
-
-
-// fn play_move(
-//     mut commands: Commands,
-//     mut query: Query<(Entity, &mut MoveHistory, &ValidMoves, &mut Turn), Changed<PlayMove>>,
-// ) {
-//     if query.is_empty() { return }
-//     let (entity, mut play_move, mut history, valid_moves, mut turn) = query.single_mut().unwrap();
-    
-
-//     if let Some(mv) = &play_move.0 {
-//         if valid_moves.0.contains(&mv) {
-//             println!("playing move: {:?}", mv);
-//             history.push(mv.clone());
-    
-//             play_move.0 = None;
-//             commands.entity(entity).insert(ChangeTurn);
-//         }
-//     }
-// }
 
 
 
@@ -84,20 +62,20 @@ fn change_turn(
 
 
 
-fn list_new_moves(moves: Query<(&ValidMoves, &Turn), Changed<ValidMoves>>) {
-    if let Ok((vm, turn)) = moves.single() {
-        if !vm.0.is_empty() {
-            info!("\n------- {:?}: Valid Moves -------", turn.0);
-        }
+// fn list_new_moves(moves: Query<(&ValidMoves, &Turn), Changed<ValidMoves>>) {
+//     if let Ok((vm, turn)) = moves.single() {
+//         if !vm.0.is_empty() {
+//             info!("\n------- {:?}: Valid Moves -------", turn.0);
+//         }
         
-        for mm in &vm.0 {
-            // let from_i64 = index_144_to_64(mm.from as i32);
-            // let to_i64 = index_144_to_64(mm.to as i32);
+//         for mm in &vm.0 {
+//             // let from_i64 = index_144_to_64(mm.from as i32);
+//             // let to_i64 = index_144_to_64(mm.to as i32);
             
-            info!("{} -> {}", index_64_to_algebraic(mm.from()), index_64_to_algebraic(mm.to()))
-        }
-    }
-}
+//             info!("{} -> {}", index_64_to_algebraic(mm.from()), index_64_to_algebraic(mm.to()))
+//         }
+//     }
+// }
 
 
 fn calc_valid_moves(
@@ -124,8 +102,6 @@ fn calc_valid_moves(
     // step 1. regn alle pseudo træk ud
     let mut pseudo_moves = Vec::new();
     calculate_pseudo_moves(&mut pseudo_moves, &turn.0, &chessboard);
-
-    info!("calculated {} pseudo moves!", pseudo_moves.len());
 
     // tilføj check data
     let _ = check_for_check(&mut pseudo_moves, &chessboard);
@@ -240,11 +216,11 @@ fn calculate_pseudo_moves(
 
                     
 
-
+                    // normalt frem og dobbelt ryk frem
                     proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction)).into(), requires: [Pacifist].into(), information: MoveInformation::None });
                     proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).up(direction)).into(), requires: [Pacifist, FirstTime, IsFree(*index.clone().up(direction))].into(), information: MoveInformation::PawnDoubleMove(index.clone().up(direction).clone()) });
 
-                    // angrib
+                    // angrib til hver side
                     proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).dec(BoardType::Large)).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
                     proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).inc(BoardType::Large)).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
 
@@ -253,15 +229,11 @@ fn calculate_pseudo_moves(
                     proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).inc(BoardType::Large)).into(), requires: [EnPassant].into(), information: MoveInformation::EnPassant });
                 },
                 PieceType::Knight => {
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(24-1)).into(), requires: [].into(), information: MoveInformation::None });
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(24+1)).into(), requires: [].into(), information: MoveInformation::None });
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-24-1)).into(), requires: [].into(), information: MoveInformation::None });
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-24+1)).into(), requires: [].into(), information: MoveInformation::None });
+                    let directions: [i32; 8] = [24-1, 24+1, -24-1, -24+1, 2-12, 2+12, -2-12, -2+12];
 
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(2-12)).into(), requires: [].into(), information: MoveInformation::None });
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(2+12)).into(), requires: [].into(), information: MoveInformation::None });
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-2-12)).into(), requires: [].into(), information: MoveInformation::None });
-                    proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(-2+12)).into(), requires: [].into(), information: MoveInformation::None });
+                    for dir in directions {
+                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().add(dir)).into(), requires: [].into(), information: MoveInformation::None });
+                    }
                 },
                 PieceType::King => {
                     let directions = vec![1, -1, 12, -12, 12-1, 12+1, -12-1, -12+1];
@@ -332,7 +304,6 @@ fn calculate_pseudo_moves(
                             proposed_moves.push(ProposeMove { movement: (index, target_index).into(), requires: [].into(), information: MoveInformation::None });
                             
                             target_index.add(dir);
-
 
                             if break_after { break }
                         }

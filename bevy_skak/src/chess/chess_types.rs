@@ -208,6 +208,7 @@ pub struct Move {
     pub information: MoveInformation,
     pub check: bool,
     pub check_mate: bool,
+    pub name: String,
 }
 
 
@@ -268,6 +269,7 @@ impl ProposeMove {
             information: self.information.clone(),
             check: false,
             check_mate: false,
+            name: "".to_string(),
         }
     }
 }

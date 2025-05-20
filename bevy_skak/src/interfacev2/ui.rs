@@ -202,3 +202,11 @@ pub fn update_mouse_pos(mut mouse_pos: ResMut<MousePosition>, mouse: Query<&Poin
 pub fn update_tile_size(mut tile_size: ResMut<TileSize>, window_size: Res<WindowSize>) {
     tile_size.0 = window_size.0 / 8.0;
 }
+
+
+// TODO: Lav noget der ændre på størrelsen af vinduet
+// pub fn update_window_size(
+//     mut ws: ResMut<WindowSize>,
+// ) {
+
+// }
