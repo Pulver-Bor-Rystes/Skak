@@ -1,4 +1,4 @@
-use crate::{chess::chess_types::ValidMoves, extra::iter_len};
+use crate::{bevy_chess::BevyChessBoard, extra::iter_len};
 use super::*;
 
 #[derive(Component)]
@@ -12,7 +12,7 @@ pub fn remove_hightlights(
     mut deselect_reader: EventReader<DeselectEvent>,
     highlights: Query<Entity, With<ValidMove>>,
 ) {
-    for ev in deselect_reader.read() {
+    for _ev in deselect_reader.read() {
         for entity in &highlights {
             commands.entity(entity).despawn();
         }
@@ -21,7 +21,7 @@ pub fn remove_hightlights(
 
 pub fn spawn_highlights(
     mut commands: Commands,
-    q: Query<&ValidMoves>,
+    bevy_chessboard: Res<BevyChessBoard>,
     selected_piece: Query<&Index, (With<ChessPiece>, Added<Selected>)>,
     asset_server: Res<AssetServer>,
     window_size: Res<WindowSize>,
@@ -30,14 +30,10 @@ pub fn spawn_highlights(
     if iter_len(selected_piece.iter()) != 1 {
         return;
     }
-    if iter_len(q.iter()) != 1 {
-        return;
-    }
 
-    let valid_moves = q.single().unwrap();
     let piece = selected_piece.single().unwrap();
 
-    for valid_move in &valid_moves.0 {
+    for valid_move in &bevy_chessboard.0.valid_moves {
         if valid_move.from() != piece.0 {
             continue;
         }

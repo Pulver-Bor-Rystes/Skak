@@ -1,11 +1,10 @@
 use bevy::prelude::*;
-use chess::ChessPlugin;
-use interfacev2::InterfacePlugin;
-
+use bevy_chess::BevyChessPlugin;
+use interface::InterfacePlugin;
 
 mod chess;
-// mod interface;
-mod interfacev2;
+mod bevy_chess;
+mod interface;
 mod extra;
 
 
@@ -13,7 +12,11 @@ fn main() {
     App::new()
         .add_plugins((
             InterfacePlugin,
-            ChessPlugin,
+            BevyChessPlugin,
+            // EguiPlugin {
+            //     enable_multipass_for_primary_context: true,
+            // },
+            // WorldInspectorPlugin::new(),
         ))
         .run();
 }

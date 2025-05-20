@@ -1,4 +1,4 @@
-use crate::{chess::chess_types::{MoveHistory, ValidMoves}, extra::iter_len};
+use crate::{bevy_chess::BevyChessBoard, extra::iter_len};
 
 use super::*;
 
@@ -55,7 +55,8 @@ pub fn deselect_piece(
     mouse_btn: Res<ButtonInput<MouseButton>>,
     mut ev_writer: EventWriter<DeselectEvent>,
 
-    mut chessboard_query: Query<(&ValidMoves, &mut MoveHistory)>,
+    // mut chessboard_query: Query<(&ValidMoves, &mut MoveHistory)>,
+    mut chessboard: ResMut<BevyChessBoard>,
 ) {
     if iter_len(selected_piece.iter()) != 1 { return }
     let (entity, mut from_index) = selected_piece.single_mut().unwrap();
@@ -67,12 +68,12 @@ pub fn deselect_piece(
             if let Ok(to_index) = hovered_tiles.single() {
                 info!("Trying to place at: {}", to_index.0.str());
 
-                let (valid_moves, mut history) = chessboard_query.single_mut().unwrap();
-
-                for vm in &valid_moves.0 {
+                // let (valid_moves, mut history) = chessboard_query.single_mut().unwrap();
+                for vm in &chessboard.0.valid_moves.clone() {
                     if vm.to() == to_index.0 && vm.from() == from_index.0 {
                         info!("Playing move!: {:?}", vm);
-                        history.push(vm.clone());
+                        // chessboard.0.move_history.push(vm.clone());
+                        chessboard.0.play_move(vm);
                     }
                 }
                 

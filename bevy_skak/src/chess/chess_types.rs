@@ -1,5 +1,3 @@
-use bevy::{platform::collections::HashSet, prelude::*};
-
 use crate::extra::{index_144_to_64, index_64_to_144, index_64_to_algebraic};
 
 
@@ -14,7 +12,6 @@ const LAST_ROWS: [i32; 16] = [26, 27, 28, 29, 30, 31, 32, 32, 110, 111, 112, 113
 
 
 impl Index144 {
-
     // Default
 
     pub fn from_minus_one() -> Self {
@@ -27,10 +24,6 @@ impl Index144 {
     pub fn from12(v: i32) -> Self {
         Self(v)
     }
-
-    pub fn from8(v: i32) -> Self {
-        Self(index_64_to_144(v))
-    } 
 
     pub fn new() -> Self {
         Self(0)
@@ -52,11 +45,6 @@ impl Index144 {
 
     pub fn add(&mut self, val: i32) -> &mut Self {
         self.0 += val;
-        self
-    }
-
-    pub fn down(&mut self, direction: i32) -> &mut Self {
-        self.0 -= 12 * direction;
         self
     }
 
@@ -127,49 +115,46 @@ impl Index144 {
     pub fn i8(&self) -> i32 {
         index_144_to_64(self.i12()).unwrap()
     }
-
-
-
-    pub fn u(&self, board_type: BoardType) -> usize {
-        match board_type {
-            BoardType::Regular => self.u8(),
-            BoardType::Large => self.u12(),
-        }
-    }
-
-    pub fn i(&self, board_type: BoardType) -> i32 {
-        match board_type {
-            BoardType::Regular => self.i8(),
-            BoardType::Large => self.i12(),
-        }
-    }
-
-
-    // pub fn s(&self) -> Self {
-    //     self.clone()
-    // }
 }
 
 
 
 // Resources
 
-#[derive(Resource, Deref)]
-pub struct InvalidPositions(pub HashSet<(u8, u8)>);
-
-#[derive(Resource, Deref)]
-pub struct InvalidIndexes(pub HashSet<Index144>);
-
-
-
 
 // Components
 
-#[derive(Component, Clone)]
+#[derive(Clone)]
 pub struct ChessBoard {
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
+    pub turn: ChessColor,
+
+    pub valid_moves: Vec<Move>,
+    pub move_history: Vec<Move>,
+    
+    // changes
+    pub board_changed: bool,
+    pub turn_changed: bool,
 }
+
+
+impl ChessBoard {
+    pub fn change_turn(&mut self) {
+        self.turn = match self.turn {
+            ChessColor::White => ChessColor::Black,
+            ChessColor::Black => ChessColor::White,
+        };
+
+        self.turn_changed = true;
+    }
+
+    pub fn tick(&mut self) {
+        self.board_changed = false;
+        self.turn_changed = false;
+    }
+}
+
 
 #[derive(Debug, Clone, Copy)]
 pub struct EnPassant {
@@ -178,19 +163,19 @@ pub struct EnPassant {
 }
 
 
-#[derive(Component)]
-pub struct Turn(pub ChessColor);
+// #[derive(Component)]
+// pub struct Turn(pub ChessColor);
 
-#[derive(Component)]
-pub struct ChangeTurn;
+// #[derive(Component)]
+// pub struct ChangeTurn;
 
 
 
-#[derive(Component, DerefMut, Deref, Debug)]
-pub struct ValidMoves(pub Vec<Move>);
+// #[derive(Component, DerefMut, Deref, Debug)]
+// pub struct ValidMoves(pub Vec<Move>);
 
-#[derive(Component, Debug, DerefMut, Deref)]
-pub struct MoveHistory(pub Vec<Move>);
+// #[derive(Component, Debug, DerefMut, Deref)]
+// pub struct MoveHistory(pub Vec<Move>);
 
 // #[derive(Component, Debug, Clone, PartialEq)]
 // pub struct Move {
@@ -201,7 +186,7 @@ pub struct MoveHistory(pub Vec<Move>);
 //     pub requires: Vec<MoveRequirement>,
 // }
 
-#[derive(Component, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Move {
     pub movement: Movement,
     pub promote: Option<Promotion>,

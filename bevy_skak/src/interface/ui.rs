@@ -1,5 +1,5 @@
-use bevy::{color::palettes::{css::{BEIGE, WHITE}, tailwind::{AMBER_100, GRAY_100}}, picking::pointer::PointerLocation, platform::collections::HashSet, prelude::*};
-use crate::{chess::chess_types::{BoardType, ChessBoard, Index144, InvalidIndexes, Turn}, extra::index_to_pixel_coords};
+use bevy::{color::palettes::css::{BEIGE, WHITE}, picking::pointer::PointerLocation, prelude::*};
+use crate::{bevy_chess::BevyChessBoard, chess::chess_types::{BoardType, Index144}, extra::index_to_pixel_coords};
 use super::types::*;
 use select::*;
 
@@ -7,7 +7,6 @@ pub mod select;
 pub mod hover;
 pub mod placement;
 pub mod possible_moves;
-pub mod react_on_board_changes;
 
 
 #[derive(Event)]
@@ -20,8 +19,9 @@ pub struct ReRenderBoard;
 pub struct UIOrientation(pub bool);
 
 
-pub fn setup_camera(mut commands: Commands) {
+pub fn setup_camera(mut commands: Commands, mut ev: EventWriter<ReRenderBoard>) {
     commands.spawn(Camera2d);
+    ev.write(ReRenderBoard);
 }
 
 
@@ -110,10 +110,10 @@ pub fn setup_black_white_tiles(
 
 
 pub fn on_board_change(
-    board_change: Query<(), Changed<ChessBoard>>,
+    chessboard: Res<BevyChessBoard>,
     mut ev: EventWriter<ReRenderBoard>,
 ) {
-    if board_change.is_empty() { return }
+    if !chessboard.0.board_changed { return }
     ev.write(ReRenderBoard);
 }
 
@@ -134,18 +134,16 @@ pub fn remove_chess_pieces(
 
 pub fn spawn_chess_pieces(
     mut commands: Commands,
-    board: Query<&ChessBoard>,
+    board: Res<BevyChessBoard>,
     asset_server: Res<AssetServer>,
     window_size: Res<WindowSize>,
     ui_orientation: Res<UIOrientation>,
     ev: EventReader<ReRenderBoard>
 ) {
     if ev.is_empty() { return }
-    if board.is_empty() { return }
-    let board = board.single().unwrap();
     
     let mut index = Index144::new();
-    for piece in &board.pieces {
+    for piece in &board.0.pieces {
         if let Some(piece) = piece {
             let parent = commands.spawn((
                 Name::new(format!("Chess Piece - {}, has_moved: {}", piece.as_letters(), piece.has_moved)),

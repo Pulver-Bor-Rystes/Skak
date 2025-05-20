@@ -1,17 +1,5 @@
-use crate::chess::chess_types::{BoardType, Index144};
+use crate::chess::chess_types::Index144;
 
-pub fn index_to_coords(index: usize, board_size: usize) -> (usize, usize) {
-    let x = index % board_size;
-    let y = index / board_size;
-    (x, y)
-}
-
-
-// pub fn index_to_coords_vec3(index: usize, board_size: usize, resolution: usize) -> (f32, f32, f32) {
-//     let x = index % board_size;
-//     let y = index / board_size;
-//     (x as f32, y as f32, 0.0)
-// }
 
 pub fn index_to_pixel_coords(index: Index144, window_size: f32, ui_orientation: bool) -> (f32, f32, f32) {
     if !ui_orientation {
@@ -83,25 +71,25 @@ pub fn index_64_to_algebraic(index: Index144) -> String {
 }
 
 
-pub fn algebraic_to_index_144(square: &str) -> usize {
-    if square.len() != 2 {
-        panic!("shiiiit");
-    }
+// pub fn algebraic_to_index_144(square: &str) -> usize {
+//     if square.len() != 2 {
+//         panic!("shiiiit");
+//     }
 
-    let bytes = square.as_bytes();
-    let file = bytes[0];
-    let rank = bytes[1];
+//     let bytes = square.as_bytes();
+//     let file = bytes[0];
+//     let rank = bytes[1];
 
-    if !(b'a'..=b'h').contains(&file) || !(b'1'..=b'8').contains(&rank) {
-        panic!("fuuuck");
-    }
+//     if !(b'a'..=b'h').contains(&file) || !(b'1'..=b'8').contains(&rank) {
+//         panic!("fuuuck");
+//     }
 
-    let file_index = (file - b'a') as i32;
-    let rank_index = 7-(rank - b'1') as i32;
+//     let file_index = (file - b'a') as i32;
+//     let rank_index = 7-(rank - b'1') as i32;
 
-    let index_64 = rank_index * 8 + file_index;
-    index_64_to_144(index_64) as usize
-}
+//     let index_64 = rank_index * 8 + file_index;
+//     index_64_to_144(index_64) as usize
+// }
 
 
 pub fn iter_len(something: impl Iterator) -> i32 {
