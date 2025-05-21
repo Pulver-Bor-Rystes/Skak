@@ -1,6 +1,8 @@
 use crate::extra::{index_144_to_64, index_64_to_144, index_64_to_algebraic};
 
 
+pub mod piece_data;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Index144(i32);
 
@@ -8,7 +10,7 @@ pub enum BoardType { Regular, Large }
 
 
 const INVALID_INDEXES: [i32; 80] = [9, 83, 84, 135, 141, 120, 138, 24, 48, 85, 123, 139, 7, 121, 6, 136, 25, 35, 142, 106, 128, 22, 70, 124, 34, 4, 5, 23, 71, 20, 127, 2, 37, 109, 129, 122, 143, 3, 107, 36, 140, 73, 0, 21, 125, 14, 18, 132, 72, 133, 96, 108, 19, 130, 12, 16, 1, 95, 15, 126, 59, 131, 97, 119, 58, 17, 10, 61, 118, 46, 94, 13, 137, 47, 82, 8, 60, 134, 49, 11 ];
-const LAST_ROWS: [i32; 16] = [26, 27, 28, 29, 30, 31, 32, 32, 110, 111, 112, 113, 114, 115, 116, 117];
+const LAST_ROWS: [i32; 16] = [26, 27, 28, 29, 30, 31, 32, 33, 110, 111, 112, 113, 114, 115, 116, 117];
 
 
 impl Index144 {
@@ -129,6 +131,9 @@ pub struct ChessBoard {
 
     pub moves: Vec<Move>,
     pub move_history: Vec<Move>,
+    
+    pub halfmove_clock: i32,
+    pub fullmove_number: i32,
     
     // changes
     pub board_changed: bool,

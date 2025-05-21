@@ -68,15 +68,7 @@ pub fn deselect_piece(
             if let Ok(to_index) = hovered_tiles.single() {
                 info!("Trying to place at: {}", to_index.0.to_str());
 
-                // let (valid_moves, mut history) = chessboard_query.single_mut().unwrap();
-                for vm in &chessboard.0.moves.clone() {
-                    if vm.to() == to_index.0 && vm.from() == from_index.0 {
-                        info!("Playing move!: {:?}", vm);
-                        // chessboard.0.move_history.push(vm.clone());
-                        chessboard.0.play_move(vm);
-                    }
-                }
-                
+                chessboard.0.play_fromto(from_index.0, to_index.0);
             }
         }
         

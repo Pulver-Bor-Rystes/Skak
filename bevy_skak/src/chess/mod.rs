@@ -8,6 +8,7 @@ use chess_types::*;
 impl ChessBoard {
     pub fn default() -> Self {
         let mut s = Self {
+            
             pieces: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
@@ -26,6 +27,8 @@ impl ChessBoard {
             moves: Vec::new(),
             move_history: Vec::new(),
             turn: ChessColor::White,
+            fullmove_number: 0,
+            halfmove_clock: 0,
 
             board_changed: false,
             turn_changed: false,
@@ -35,6 +38,40 @@ impl ChessBoard {
 
         s
     }
+
+
+
+    pub fn from_fen(&mut self, fen_str: &str) -> bool {
+        // fen er delt ind i 6 dele. Lad os dele dem op
+
+        // counteren for lov at starte på 1, så er det lidt nemmere at følge med på wikipedia siden
+        let mut counter = 0;
+        
+        for part in fen_str.split_whitespace() {
+            counter += 1;
+
+            for letter in part.split("") {
+                let piece = Piece::from_str(letter);
+
+                println!("putting {:?}", piece);
+            }
+            
+        }
+
+
+        true
+    }
+
+
+    pub fn to_fen(&self) -> String {
+        let mut fen = String::new();
+
+
+
+        fen
+    }
+
+
 
     fn change_turn(&mut self) {
         self.turn = match self.turn {
@@ -60,12 +97,50 @@ impl ChessBoard {
     }
 
 
-    pub fn play_move(&mut self, chess_move: &Move) {
+    pub fn play_fromto(&mut self, from: Index144, to: Index144) {
+        for chess_move in &self.moves.clone() {
+            if chess_move.from() != from || chess_move.to() != to { continue }
+
+            self.play(chess_move);
+
+            break;
+        }
+    }
+
+
+    pub fn play_notation(&mut self, move_name: &str) {
+        for chess_move in &self.moves.clone() {
+            if chess_move.name != move_name { continue }
+
+            self.play(chess_move);
+            
+            break;
+        }
+    }
+
+
+    pub fn play(&mut self, chess_move: &Move) {
+        let was_capture = self.get(chess_move.to()).is_some();
+        let was_pawn_advance = if let Some(Piece { kind: PieceType::Pawn, color: _, has_moved: _ }) = self.get(chess_move.from()) { true } else { false };
+        
+        // actual changes
         self.move_history.push(chess_move.clone());
         self.apply_move_to_chessboard(chess_move);
         self.change_turn();
         self.board_changed = true;
         self.turn_changed = true;
+
+
+        if self.turn == ChessColor::White {
+            self.fullmove_number += 1;
+        }
+
+        if was_capture || was_pawn_advance {
+            self.halfmove_clock = 0;
+        }
+        else {
+            self.halfmove_clock += 1;
+        }
 
 
         self.calc_valid_moves(false);
@@ -334,10 +409,10 @@ impl ChessBoard {
             if !not_worthy && proposal.movement.to.is_valid() {
                 if proposal.movement.to.is_on_last_row() && self.get(proposal.movement.from).unwrap().kind == PieceType::Pawn {
                     // promotion
+                    pseudo_moves.push( proposal.into_move().set_promotion(Promotion::Queen) );
                     pseudo_moves.push( proposal.into_move().set_promotion(Promotion::Rook) );
                     pseudo_moves.push( proposal.into_move().set_promotion(Promotion::Bishop) );
                     pseudo_moves.push( proposal.into_move().set_promotion(Promotion::Knight) );
-                    pseudo_moves.push( proposal.into_move().set_promotion(Promotion::Queen) );
                 }
                 else {
                     pseudo_moves.push( proposal.into_move() );
@@ -508,69 +583,6 @@ fn check_for_check(list: &mut Vec<chess_types::Move>, chessboard: &ChessBoard) -
 
 
 
-
-
-
-impl Piece {
-    pub fn to_str_img_format(&self) -> String {
-        let color = match self.color {
-            ChessColor::White => "w",
-            ChessColor::Black => "b",
-        };
-
-        let kind = match self.kind {
-            PieceType::Bishop => "b",
-            PieceType::Knight => "n",
-            PieceType::King => "k",
-            PieceType::Pawn => "p",
-            PieceType::Queen => "q",
-            PieceType::Rook => "r",
-        };
-
-        format!("{}{}", color, kind)
-    }
-
-    // pub fn to_str(&self) -> String {
-    //     let kind = match self.kind {
-    //         PieceType::Bishop => "b",
-    //         PieceType::Knight => "n",
-    //         PieceType::King => "k",
-    //         PieceType::Pawn => "p",
-    //         PieceType::Queen => "q",
-    //         PieceType::Rook => "r",
-    //     };
-
-    //     match self.color {
-    //         ChessColor::White => kind.to_uppercase(),
-    //         ChessColor::Black => kind.to_string(),
-    //     }
-    // }
-}
-
-
-impl PieceType {
-    fn to_str_name(&self) -> String {
-        match self {
-            PieceType::Pawn => "pawn",
-            PieceType::Rook => "rook",
-            PieceType::Bishop => "bishop",
-            PieceType::Knight => "knight",
-            PieceType::Queen => "queen",
-            PieceType::King => "king",
-        }.to_string()
-    }
-
-    fn to_str_move_name_format(&self) -> String {
-        match self {
-            PieceType::Pawn => "",
-            PieceType::Rook => "r",
-            PieceType::Bishop => "b",
-            PieceType::Knight => "n",
-            PieceType::Queen => "q",
-            PieceType::King => "k",
-        }.to_string().to_uppercase()
-    }
-}
 
 
 
