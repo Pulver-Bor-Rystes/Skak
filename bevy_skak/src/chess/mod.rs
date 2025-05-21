@@ -1,4 +1,6 @@
 pub mod chess_types;
+use std::collections::HashMap;
+
 use chess_types::*;
 
 
@@ -21,7 +23,7 @@ impl ChessBoard {
                 None, None, None, None, None, None, None, None, None, None, None, None,
             ],
             en_passant: None,
-            valid_moves: Vec::new(),
+            moves: Vec::new(),
             move_history: Vec::new(),
             turn: ChessColor::White,
 
@@ -29,9 +31,23 @@ impl ChessBoard {
             turn_changed: false,
         };
 
-        s.calc_valid_moves();
+        s.calc_valid_moves(false);
 
         s
+    }
+
+    fn change_turn(&mut self) {
+        self.turn = match self.turn {
+            ChessColor::White => ChessColor::Black,
+            ChessColor::Black => ChessColor::White,
+        };
+
+        self.turn_changed = true;
+    }
+
+    pub fn tick(&mut self) {
+        self.board_changed = false;
+        self.turn_changed = false;
     }
 
 
@@ -52,12 +68,11 @@ impl ChessBoard {
         self.turn_changed = true;
 
 
-        self.calc_valid_moves();
+        self.calc_valid_moves(false);
     }
 
-    fn calc_valid_moves(&mut self) {
-
-        self.valid_moves.clear();
+    fn calc_valid_moves(&mut self, only_first_two_steps: bool) {
+        self.moves.clear();
         
         // basically regn alle pseudo træk ud.
         // derefter lav kør alle trækkene igennem og tjek om målet er en konge, hvis det er, så marker den som check.
@@ -68,11 +83,7 @@ impl ChessBoard {
         let mut pseudo_moves = Vec::new();
         self.calculate_pseudo_moves(&mut pseudo_moves);
 
-        // tilføj check data
-        let _ = check_for_check(&mut pseudo_moves, self);
-
-
-        // step 2. prøv trækket og se om det resultere i at vores konge er sat i skak...
+        // step 2. sorter alt fra som er farligt for vores konge!
         for pm in &mut pseudo_moves {
             let mut new_chessboard = self.clone();
             new_chessboard.apply_move_to_chessboard(pm);
@@ -116,11 +127,46 @@ impl ChessBoard {
             };
 
             if cant_continue { continue }
-            self.valid_moves.push(pm.clone());
+            self.moves.push(pm.clone());
         }
+        
+        // springer resten over, så vi undgår et uendeligt loop!
+        if only_first_two_steps { return }
 
 
-        println!("calculated {} actual moves", self.valid_moves.len());
+        // step 3. gå alle træk igennem og tjek hvorvidt vi har sat kongen i skak eller skakmat.
+        let new_chessboard = self.clone();
+        
+        for mv in &mut self.moves {
+            // skakmat
+            let mut cb1 = new_chessboard.clone();            
+            cb1.apply_move_to_chessboard(mv);
+            cb1.change_turn();
+            cb1.calc_valid_moves(true);
+            
+            if cb1.moves.len() == 0 {
+                mv.check_mate = true;
+            }
+            
+            // tjek skak
+            let mut cb2 = new_chessboard.clone();
+            cb2.apply_move_to_chessboard(mv);
+            cb2.calc_valid_moves(true);
+            for new_move in cb2.moves.iter() {
+                if let Some(Piece { kind: PieceType::King, color: _, has_moved: _ }) = cb2.get(new_move.to()) {
+                    mv.check = true;
+                }
+            }
+        }
+        
+
+        self.generate_name_for_each_move();
+
+        println!("calculated {} actual moves", self.moves.len());
+
+        for mv in &self.moves {
+            println!(" -> {}", mv.name);
+        }
     }
 
 
@@ -364,6 +410,82 @@ impl ChessBoard {
     }
 
 
+    fn generate_name_for_each_move(&mut self) {        
+        let mut map: HashMap<String, HashMap<Index144, Vec<Move>>> = HashMap::new();
+
+        for mv in &self.moves {
+            let piece = self.get(mv.from()).unwrap();
+            let key = piece.kind.to_str_name();
+
+            if map.contains_key( &key ) {
+                let target_map = map.get_mut(&key).unwrap();
+
+                if target_map.contains_key(&mv.to()) {
+                    let vec = target_map.get_mut(&mv.to()).unwrap();
+                    vec.push(mv.clone());
+                }
+                else {
+                    target_map.insert(mv.to(), vec![mv.clone()]);
+                }
+            }
+            else {
+                let mut new_hash_map: HashMap<Index144, Vec<Move>> = HashMap::new();
+                new_hash_map.insert(mv.to(), vec![mv.clone()]);
+                map.insert(key, new_hash_map);
+            }
+        }
+
+        let board = self.clone();
+
+        let mut names: HashMap<String, Vec<usize>> = HashMap::new();
+
+        let mut index = 0;
+        for mv in &mut self.moves {
+            // lav navnet
+            mv.make_name(&board, false, false);
+            
+            if names.contains_key(&mv.name) {
+                let vec = names.get_mut(&mv.name).unwrap();
+                vec.push(index);
+            }
+            else {
+                names.insert(mv.name.clone(), vec![index]);
+            }
+
+            index += 1;
+        }
+
+        let moves_clone = self.moves.clone();
+
+
+        for (name, list) in names {
+            if list.len() > 1 {
+                println!("\nmultiple moves for move name: {}", name);
+
+                for index in &list {
+                    let mv = &mut self.moves[*index];
+
+                    let mut file_diff = false;
+                    let mut rank_diff= false;
+
+                    // kig på trækket
+                    // sammenlign med alle andre træk og hvis de deler file, så slå det til, hvis den deler rank, slå det til
+
+                    for other_index in &list {
+                        if index == other_index { continue }
+                        
+                        let other_mv = &moves_clone[*other_index];
+
+                        file_diff = file_diff || mv.file() != other_mv.file();
+                        rank_diff = rank_diff || mv.rank() != other_mv.rank();
+                    }
+
+                    mv.make_name(&board, file_diff, rank_diff);
+                }
+            }
+        }
+    }
+
 }
 
 
@@ -390,7 +512,7 @@ fn check_for_check(list: &mut Vec<chess_types::Move>, chessboard: &ChessBoard) -
 
 
 impl Piece {
-    pub fn as_letters(&self) -> String {
+    pub fn to_str_img_format(&self) -> String {
         let color = match self.color {
             ChessColor::White => "w",
             ChessColor::Black => "b",
@@ -406,6 +528,47 @@ impl Piece {
         };
 
         format!("{}{}", color, kind)
+    }
+
+    // pub fn to_str(&self) -> String {
+    //     let kind = match self.kind {
+    //         PieceType::Bishop => "b",
+    //         PieceType::Knight => "n",
+    //         PieceType::King => "k",
+    //         PieceType::Pawn => "p",
+    //         PieceType::Queen => "q",
+    //         PieceType::Rook => "r",
+    //     };
+
+    //     match self.color {
+    //         ChessColor::White => kind.to_uppercase(),
+    //         ChessColor::Black => kind.to_string(),
+    //     }
+    // }
+}
+
+
+impl PieceType {
+    fn to_str_name(&self) -> String {
+        match self {
+            PieceType::Pawn => "pawn",
+            PieceType::Rook => "rook",
+            PieceType::Bishop => "bishop",
+            PieceType::Knight => "knight",
+            PieceType::Queen => "queen",
+            PieceType::King => "king",
+        }.to_string()
+    }
+
+    fn to_str_move_name_format(&self) -> String {
+        match self {
+            PieceType::Pawn => "",
+            PieceType::Rook => "r",
+            PieceType::Bishop => "b",
+            PieceType::Knight => "n",
+            PieceType::Queen => "q",
+            PieceType::King => "k",
+        }.to_string().to_uppercase()
     }
 }
 

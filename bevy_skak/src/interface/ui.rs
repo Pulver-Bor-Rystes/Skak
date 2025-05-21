@@ -76,7 +76,7 @@ pub fn setup_black_white_tiles(
             };
 
             let parent = commands.spawn((
-                Name::new(format!("Tile: ({})", index.str())),
+                Name::new(format!("Tile: ({})", index.to_str())),
                 Tile,
                 Index(index),
                 IsHoverable,
@@ -146,7 +146,7 @@ pub fn spawn_chess_pieces(
     for piece in &board.0.pieces {
         if let Some(piece) = piece {
             let parent = commands.spawn((
-                Name::new(format!("Chess Piece - {}, has_moved: {}", piece.as_letters(), piece.has_moved)),
+                Name::new(format!("Chess Piece - {}, has_moved: {}", piece.to_str_img_format(), piece.has_moved)),
                 ChessPiece,
                 IsHoverable,
                 Visibility::default(),
@@ -159,11 +159,11 @@ pub fn spawn_chess_pieces(
 
             // actual image
             commands.spawn((
-                Name::new(format!("Piece Image - {}", piece.as_letters())),
+                Name::new(format!("Piece Image - {}", piece.to_str_img_format())),
                 ChildOf(parent),
                 Visibility::default(),
                 Sprite {
-                    image: asset_server.load(format!("{}.png", piece.as_letters())),
+                    image: asset_server.load(format!("{}.png", piece.to_str_img_format())),
                     ..default()
                 },
                 Transform::default()

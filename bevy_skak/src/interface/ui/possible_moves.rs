@@ -33,7 +33,7 @@ pub fn spawn_highlights(
 
     let piece = selected_piece.single().unwrap();
 
-    for valid_move in &bevy_chessboard.0.valid_moves {
+    for valid_move in &bevy_chessboard.0.moves {
         if valid_move.from() != piece.0 {
             continue;
         }

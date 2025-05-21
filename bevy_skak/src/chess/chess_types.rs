@@ -91,7 +91,7 @@ impl Index144 {
         LAST_ROWS.contains(&self.0)
     }
 
-    pub fn str(&self) -> String {
+    pub fn to_str(&self) -> String {
         if self.is_valid() {
             index_64_to_algebraic(*self)
         }
@@ -121,38 +121,18 @@ impl Index144 {
 
 // Resources
 
-
-// Components
-
 #[derive(Clone)]
 pub struct ChessBoard {
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
     pub turn: ChessColor,
 
-    pub valid_moves: Vec<Move>,
+    pub moves: Vec<Move>,
     pub move_history: Vec<Move>,
     
     // changes
     pub board_changed: bool,
     pub turn_changed: bool,
-}
-
-
-impl ChessBoard {
-    pub fn change_turn(&mut self) {
-        self.turn = match self.turn {
-            ChessColor::White => ChessColor::Black,
-            ChessColor::Black => ChessColor::White,
-        };
-
-        self.turn_changed = true;
-    }
-
-    pub fn tick(&mut self) {
-        self.board_changed = false;
-        self.turn_changed = false;
-    }
 }
 
 
@@ -163,28 +143,6 @@ pub struct EnPassant {
 }
 
 
-// #[derive(Component)]
-// pub struct Turn(pub ChessColor);
-
-// #[derive(Component)]
-// pub struct ChangeTurn;
-
-
-
-// #[derive(Component, DerefMut, Deref, Debug)]
-// pub struct ValidMoves(pub Vec<Move>);
-
-// #[derive(Component, Debug, DerefMut, Deref)]
-// pub struct MoveHistory(pub Vec<Move>);
-
-// #[derive(Component, Debug, Clone, PartialEq)]
-// pub struct Move {
-//     pub from: Index144,
-//     pub to: Index144,
-//     pub promote: Option<Promotion>,
-//     pub extra_move: Option<(Index144, Index144)>,
-//     pub requires: Vec<MoveRequirement>,
-// }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Move {
@@ -212,6 +170,80 @@ impl Move {
 
         copy.promote = Some(promotion);
         return copy;
+    }
+
+    fn file_and_rank(&self) -> (String, String) {
+        let from = self.from().to_str();
+        let first = &from[0..1];
+        let last = &from[from.len() - 1..];
+
+        (first.to_string(), last.to_string())
+    }
+
+    pub fn file(&self) -> String {
+        self.file_and_rank().0
+    }
+
+    pub fn rank(&self) -> String {
+        self.file_and_rank().1
+    }
+
+
+    pub fn make_name(&mut self, chessboard: &ChessBoard, show_file: bool, show_rank: bool) {
+        // De forskellige flags
+        // 1. PieceType
+        let piece = chessboard.get(self.from()).unwrap();
+        let piece_name = piece.kind.to_str_move_name_format();
+        
+        // 2. Identifier flag in case of multiple.
+        let mut from_flag = match (show_file, show_rank) {
+            (true, true) => self.from().to_str(),
+            (true, false) => self.file(),
+            (false, true) => self.rank(),
+            (false, false) => "".to_string(),
+        };
+        
+        // 2. Capture flag
+        let mut capture_flag = match chessboard.get(self.to()).is_some() {
+            true => "x",
+            false => "",
+        };
+
+        match chessboard.en_passant {
+            Some(EnPassant { to_attack, to_remove: _ }) => {
+                if self.to() == to_attack {
+                    capture_flag = "x";
+                    if &from_flag == "" {
+                        from_flag = self.file();
+                    }
+                }
+            },
+            None => {},
+        }
+        
+        // 3. Destination
+        let destination_flag = self.to().to_str();
+        
+        // 4. Promotion
+        let promotion_flag = match self.promote {
+            Some(promotion) => match promotion {
+                Promotion::Queen => "=Q",
+                Promotion::Bishop => "=B",
+                Promotion::Knight => "=N",
+                Promotion::Rook => "=R",
+            },
+            None => "",
+        };
+        
+        // 5. Check og checkmate flag
+        let check_flag = match (self.check, self.check_mate) {
+            (_, true) => "#",
+            (true, false) => "+",
+            _ => "",
+        };
+
+
+        self.name = format!("{}{}{}{}{}{}", piece_name, from_flag, capture_flag, destination_flag, promotion_flag, check_flag);
     }
 }
 
@@ -260,21 +292,12 @@ impl ProposeMove {
 }
 
 
-// #[derive(Debug)]
-// pub struct ProposeMove {
-//     pub from: Index144,
-//     pub to: Index144,
-// }
-
-
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Promotion { Rook, Bishop, Queen, Knight }
 
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum MoveRequirement { HasToAttack, Pacifist, FirstTime, IsFree(Index144), EnPassant }
-
-
 
 
 
