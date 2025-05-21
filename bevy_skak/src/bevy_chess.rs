@@ -13,7 +13,7 @@ pub struct BevyChessPlugin;
 impl Plugin for BevyChessPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(BevyChessBoard(ChessBoard::default()))
+            .insert_resource(BevyChessBoard(ChessBoard::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq")))
             .add_systems(PostUpdate, tick)
         ;
 

@@ -1,4 +1,5 @@
 pub mod chess_types;
+use core::panic;
 use std::collections::HashMap;
 
 use chess_types::*;
@@ -6,9 +7,36 @@ use chess_types::*;
 
 
 impl ChessBoard {
+
+    fn fake(&mut self) -> Self {
+        let mut clone = self.clone();
+        clone.real = false;
+        clone
+    }
+
+    fn empty() -> Self {
+        Self {
+            real: true,
+            pieces: [None; 144],
+            en_passant: None,
+            turn: ChessColor::White,
+
+            moves: Vec::new(),
+            move_history: Vec::new(),
+            
+            halfmove_clock: 0,
+            fullmove_number: 0,
+            
+            // changes
+            board_changed: false,
+            turn_changed: false,
+        }
+    }
+    
+    
     pub fn default() -> Self {
         let mut s = Self {
-            
+            real: true,
             pieces: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
@@ -41,25 +69,160 @@ impl ChessBoard {
 
 
 
-    pub fn from_fen(&mut self, fen_str: &str) -> bool {
+    pub fn from_fen(fen_str: &str) -> Self {
+        let mut chessboard = ChessBoard::empty();
+        
         // fen er delt ind i 6 dele. Lad os dele dem op
 
         // counteren for lov at starte på 1, så er det lidt nemmere at følge med på wikipedia siden
         let mut counter = 0;
+        let mut index: Index144 = Index144::new();
         
         for part in fen_str.split_whitespace() {
             counter += 1;
 
-            for letter in part.split("") {
-                let piece = Piece::from_str(letter);
-
-                println!("putting {:?}", piece);
+            // 1. piece placement
+            if counter == 1 {
+                for letter in part.split("") {
+                    if letter == "" { continue }
+                    if letter == "/" { continue }
+                    
+                    index.inc(BoardType::Regular);
+    
+                    let piece = Piece::from_str(letter);
+                    
+                    if let Some(piece) = piece {
+                        // println!("placing {} at {}", piece.kind.to_str_name(), index.to_str());
+                        chessboard.pieces[index.u12()] = Some(piece);
+                    }
+                    else {
+                        // check if letter is a number and store the value
+                        if let Ok(num) = letter.parse::<i32>() {
+                            index.add(num-1);
+                        }
+                        else {
+                            panic!("Noget gik galt da vi forsøgte at parse: {:?}", letter);
+                        }
+                    }       
+                }
             }
-            
+
+
+            // 2. active color
+            if counter == 2 {
+                chessboard.turn = match part {
+                    "w" => ChessColor::White,
+                    "b" => ChessColor::Black,
+                    _ => panic!("Invalid turn: {}", part),
+                };
+            }
+
+            // 3. castling availability
+            if counter == 3 {
+                // disable by default
+
+                // black
+                chessboard.change_index_has_moved(30, true);
+                chessboard.change_index_has_moved(30-4, true);
+                chessboard.change_index_has_moved(30+3, true);
+
+
+                // white
+                chessboard.change_index_has_moved(114, true);
+                chessboard.change_index_has_moved(114-4, true);
+                chessboard.change_index_has_moved(114+3, true);
+                
+                
+                // castling
+                for letter in part.split("") {
+                    if letter == "" { continue }
+                    
+                    match letter {
+                        "K" => {
+                            chessboard.change_index_has_moved(114, false);
+                            chessboard.change_index_has_moved(114+3, false);
+                            // println!("White can castle king side");
+                        },
+                        "Q" => {
+                            chessboard.change_index_has_moved(114, false);
+                            chessboard.change_index_has_moved(114-4, false);
+                            // println!("White can castle queen side");
+                        },
+                        "k" => {
+                            chessboard.change_index_has_moved(30, false);
+                            chessboard.change_index_has_moved(30+3, false);
+                            // println!("Black can castle king side");
+                        },
+                        "q" => {
+                            chessboard.change_index_has_moved(30, false);
+                            chessboard.change_index_has_moved(30-4, false);
+                            // println!("Black can castle queen side");
+                        },
+                        "-" => {},
+                        _ => panic!("Invalid castling: {}", letter),
+                    }
+                }
+            }
+
+
+            // 4. En passant
+            if counter == 4 {
+                // en passant
+                if part != "-" {
+                    println!("En passant: {}", part);
+                    let to_attack = Index144::from_algebraic(part);
+
+                    let to_remove = if to_attack.rank() == "3" {
+                        to_attack.clone().add(12).clone()
+                    }
+                    else {
+                        to_attack.clone().add(-12).clone()
+                    };
+
+                    chessboard.en_passant = Some(EnPassant {
+                        to_attack,
+                        to_remove,
+                    });
+
+
+                    println!("to attack: {}, to remove: {}", to_attack.to_str(), to_remove.to_str());
+                }
+            }
+
+            // 5. halfmove clock
+            if counter == 5 {
+                if let Ok(halfmove_clock) = part.parse::<i32>() {
+                    chessboard.halfmove_clock = halfmove_clock;
+                }
+                else {
+                    panic!("Invalid halfmove clock: {}", part);
+                }
+            }
+
+            // 6. fullmove number
+            if counter == 6 {
+                if let Ok(fullmove_number) = part.parse::<i32>() {
+                    chessboard.fullmove_number = fullmove_number;
+                }
+                else {
+                    panic!("Invalid fullmove number: {}", part);
+                }
+            }
+
         }
 
 
-        true
+        chessboard.calc_valid_moves(false);
+        
+        
+        chessboard
+    }
+
+
+    fn change_index_has_moved(&mut self, index: impl Into<Index144>, has_moved: bool) {
+        if let Some(piece) = self.get_mut(index.into()) {
+            piece.has_moved = has_moved;
+        }
     }
 
 
@@ -160,7 +323,7 @@ impl ChessBoard {
 
         // step 2. sorter alt fra som er farligt for vores konge!
         for pm in &mut pseudo_moves {
-            let mut new_chessboard = self.clone();
+            let mut new_chessboard = self.fake();
             new_chessboard.apply_move_to_chessboard(pm);
 
             let mut new_pseudo_moves = Vec::new();
@@ -210,7 +373,7 @@ impl ChessBoard {
 
 
         // step 3. gå alle træk igennem og tjek hvorvidt vi har sat kongen i skak eller skakmat.
-        let new_chessboard = self.clone();
+        let new_chessboard = self.fake();
         
         for mv in &mut self.moves {
             // skakmat
@@ -274,7 +437,11 @@ impl ChessBoard {
 
                         // normalt frem og dobbelt ryk frem
                         proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction)).into(), requires: [Pacifist].into(), information: MoveInformation::None });
-                        proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).up(direction)).into(), requires: [Pacifist, FirstTime, IsFree(*index.clone().up(direction))].into(), information: MoveInformation::PawnDoubleMove(index.clone().up(direction).clone()) });
+
+                        // double pawn move
+                        if index.rank() == "2" || index.rank() == "7" {
+                            proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).up(direction)).into(), requires: [Pacifist, FirstTime].into(), information: MoveInformation::PawnDoubleMove(*index.clone().up(direction)) });
+                        }
 
                         // angrib til hver side
                         proposed_moves.push(ProposeMove { movement: (index, *index.clone().up(direction).dec(BoardType::Large)).into(), requires: [HasToAttack].into(), information: MoveInformation::None });
@@ -480,7 +647,12 @@ impl ChessBoard {
         // remove en passant no matter what
         match chess_move.information {
             MoveInformation::PawnDoubleMove(_) => {},
-            _ => self.en_passant = None,
+            _ => {
+                if self.real {
+                    println!("\n\nRemoving en passant on chess move: {:?}", chess_move);
+                }
+                self.en_passant = None
+            },
         }
     }
 
@@ -510,7 +682,7 @@ impl ChessBoard {
             }
         }
 
-        let board = self.clone();
+        let board = self.fake();
 
         let mut names: HashMap<String, Vec<usize>> = HashMap::new();
 

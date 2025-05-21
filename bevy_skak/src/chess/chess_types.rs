@@ -31,6 +31,40 @@ impl Index144 {
         Self(0)
     }
 
+    pub fn from_algebraic(square: &str) -> Self {
+        // let bytes = square.as_bytes();
+        // let file = bytes[0];
+        // let rank = bytes[1];
+
+        // if !(b'a'..=b'h').contains(&file) || !(b'1'..=b'8').contains(&rank) {
+        //     panic!("Invalid algebraic notation");
+        // }
+
+        // let file_index = (file - b'a') as i32;
+        // let rank_index = 7 - (rank - b'1') as i32;
+
+        // let index_64 = rank_index * 8 + file_index;
+        // Self(index_64_to_144(index_64))
+        if square.len() != 2 {
+            panic!("shiiiit");
+        }
+
+        let bytes = square.as_bytes();
+        let file = bytes[0];
+        let rank = bytes[1];
+
+        if !(b'a'..=b'h').contains(&file) || !(b'1'..=b'8').contains(&rank) {
+            panic!("fuuuck");
+        }
+
+        let file_index = (file - b'a') as i32;
+        let rank_index = 7-(rank - b'1') as i32;
+
+        let index_64 = rank_index * 8 + file_index;
+
+        Self(index_64_to_144(index_64))
+    }
+
     // Setters
     
     pub fn set_12(&mut self, v: i32) -> &mut Self {
@@ -85,6 +119,22 @@ impl Index144 {
 
     // Getters
 
+    
+    fn file_and_rank(&self) -> (String, String) {
+        let from = self.to_str();
+        let first = &from[0..1];
+        let last = &from[from.len() - 1..];
+
+        (first.to_string(), last.to_string())
+    }
+
+    pub fn file(&self) -> String {
+        self.file_and_rank().0
+    }
+
+    pub fn rank(&self) -> String {
+        self.file_and_rank().1
+    }
     pub fn is_valid(&self) -> bool {
         !INVALID_INDEXES.contains(&self.i12())
     }
@@ -120,11 +170,18 @@ impl Index144 {
 }
 
 
+impl From<i32> for Index144 {
+    fn from(v: i32) -> Self {
+        Self(v)
+    }
+}
+
 
 // Resources
 
 #[derive(Clone)]
 pub struct ChessBoard {
+    pub real: bool,
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
     pub turn: ChessColor,
