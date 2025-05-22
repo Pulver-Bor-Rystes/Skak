@@ -110,11 +110,13 @@ pub fn setup_black_white_tiles(
 
 
 pub fn on_board_change(
-    chessboard: Res<BevyChessBoard>,
+    mut chessboard: ResMut<BevyChessBoard>,
     mut ev: EventWriter<ReRenderBoard>,
-) {
-    if !chessboard.0.board_changed { return }
-    ev.write(ReRenderBoard);
+) {    
+    if chessboard.0.board_changed {   
+        ev.write(ReRenderBoard);
+        chessboard.0.tick();
+    }
 }
 
 

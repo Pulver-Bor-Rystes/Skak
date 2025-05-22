@@ -27,6 +27,11 @@ impl Index144 {
         Self(v)
     }
 
+    pub fn from8(v: i32) -> Self {
+        Self(index_64_to_144(v))
+    }
+
+
     pub fn new() -> Self {
         Self(0)
     }
@@ -181,6 +186,7 @@ impl From<i32> for Index144 {
 
 #[derive(Clone)]
 pub struct ChessBoard {
+    pub fen_str: String,
     pub real: bool,
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
@@ -305,6 +311,34 @@ impl Move {
         };
 
 
+        // hvad hvis det er casling?
+
+        if piece.kind == PieceType::King {           
+            // black king side
+            if self.to() == 32.into() {
+                self.name = "o-o".to_string();
+                return;
+            }
+
+            // black queen side
+            if self.to() == 28.into() {
+                self.name = "o-o-o".to_string();
+                return;
+            }
+
+            // white king side
+            if self.to() == 116.into() {
+                self.name = "O-O".to_string();
+                return;
+            }
+
+            // white queen side
+            if self.to() == 112.into() {
+                self.name = "O-O-O".to_string();
+                return;
+            }
+        }
+
         self.name = format!("{}{}{}{}{}{}", piece_name, from_flag, capture_flag, destination_flag, promotion_flag, check_flag);
     }
 }
@@ -375,3 +409,13 @@ pub enum PieceType { #[default] Pawn, Rook, Knight, Bishop, Queen, King }
 
 #[derive(Clone, Copy, PartialEq, Default, Debug)]
 pub enum ChessColor { #[default] White, Black }
+
+
+impl ChessColor {
+    pub fn to_str_fen_format(&self) -> String {
+        match self {
+            ChessColor::White => "w",
+            ChessColor::Black => "b",
+        }.to_string()
+    }
+}

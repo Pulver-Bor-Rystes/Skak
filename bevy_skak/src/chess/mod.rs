@@ -16,6 +16,7 @@ impl ChessBoard {
 
     fn empty() -> Self {
         Self {
+            fen_str: String::new(),
             real: true,
             pieces: [None; 144],
             en_passant: None,
@@ -36,6 +37,7 @@ impl ChessBoard {
     
     pub fn default() -> Self {
         let mut s = Self {
+            fen_str: String::new(),
             real: true,
             pieces: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
@@ -72,6 +74,7 @@ impl ChessBoard {
     pub fn from_fen(fen_str: &str) -> Self {
         let mut chessboard = ChessBoard::empty();
         
+        chessboard.fen_str = fen_str.to_string();
         // fen er delt ind i 6 dele. Lad os dele dem op
 
         // counteren for lov at starte på 1, så er det lidt nemmere at følge med på wikipedia siden
@@ -169,7 +172,6 @@ impl ChessBoard {
             if counter == 4 {
                 // en passant
                 if part != "-" {
-                    println!("En passant: {}", part);
                     let to_attack = Index144::from_algebraic(part);
 
                     let to_remove = if to_attack.rank() == "3" {
@@ -183,9 +185,6 @@ impl ChessBoard {
                         to_attack,
                         to_remove,
                     });
-
-
-                    println!("to attack: {}, to remove: {}", to_attack.to_str(), to_remove.to_str());
                 }
             }
 
@@ -229,7 +228,99 @@ impl ChessBoard {
     pub fn to_fen(&self) -> String {
         let mut fen = String::new();
 
+        // 1. piece placement
 
+        let mut counter = 0;
+        let mut empty_space = 0;
+
+        for i in 0..64 {
+            counter += 1;
+            let index = Index144::from8(i);
+
+            if let Some(piece) = self.get(index) {
+                if empty_space > 0 {
+                    fen += empty_space.to_string().as_str();
+                    empty_space = 0;
+                }
+
+                fen += &piece.to_str_fen_format();
+            }
+            else {
+                empty_space += 1;
+            }
+
+            if counter == 8 && i != 63 {
+                if empty_space > 0 {
+                    fen += empty_space.to_string().as_str();
+                }
+
+                fen += "/";
+                
+                counter = 0;
+                empty_space = 0;
+            }
+        }
+
+        // 2. active color
+        fen += " ";
+        fen += &self.turn.to_str_fen_format();
+
+        // 3. castling availability
+        fen += " ";
+
+        let mut castling = String::new();
+
+        // hvid
+        if let Some(Piece { kind: PieceType::King, color: _, has_moved: false }) = self.get(114) {
+            // tjek det king side
+            if let Some(Piece { kind: PieceType::Rook, color: _, has_moved: false }) = self.get(114+3) {
+                castling += "K";
+            }
+            if let Some(Piece { kind: PieceType::Rook, color: _, has_moved: false }) = self.get(114-4) {
+                castling += "Q";
+            }
+        }
+
+        // sort
+        if let Some(Piece { kind: PieceType::King, color: _, has_moved: false }) = self.get(30) {
+            // tjek det king side
+            if let Some(Piece { kind: PieceType::Rook, color: _, has_moved: false }) = self.get(30+3) {
+                castling += "k";
+            }
+            if let Some(Piece { kind: PieceType::Rook, color: _, has_moved: false }) = self.get(30-4) {
+                castling += "q";
+            }
+        }
+
+        match castling == "" {
+            true => fen += "-",
+            false => fen += &castling,
+        }
+
+
+        // 4. en passant
+        fen += " ";
+        if let Some(en_passant) = self.en_passant {
+            fen += &en_passant.to_attack.to_str();
+        }
+        else {
+            fen += "-";
+        }
+
+
+        // 5. halfmove
+        fen += " ";
+        fen += self.halfmove_clock.to_string().as_str();
+
+        // 6. fullmove
+        fen += " ";
+        fen += self.fullmove_number.to_string().as_str();
+        
+        
+        // check
+        println!("\n\nFen Produced: {}", fen);
+        println!("Correct Fen:  {}", self.fen_str);
+        println!(" -> Fen parsing went ok? {}", self.fen_str.contains(&fen));
 
         fen
     }
@@ -251,7 +342,8 @@ impl ChessBoard {
     }
 
 
-    fn get(&self, index: Index144) -> Option<&Piece> {
+    fn get(&self, index: impl Into<Index144>) -> Option<&Piece> {
+        let index: Index144 = index.into();
         self.pieces[index.u12()].as_ref()
     }
 
@@ -647,12 +739,7 @@ impl ChessBoard {
         // remove en passant no matter what
         match chess_move.information {
             MoveInformation::PawnDoubleMove(_) => {},
-            _ => {
-                if self.real {
-                    println!("\n\nRemoving en passant on chess move: {:?}", chess_move);
-                }
-                self.en_passant = None
-            },
+            _ => self.en_passant = None,
         }
     }
 
@@ -707,7 +794,7 @@ impl ChessBoard {
 
         for (name, list) in names {
             if list.len() > 1 {
-                println!("\nmultiple moves for move name: {}", name);
+                // println!("\nmultiple moves for move name: {}", name);
 
                 for index in &list {
                     let mv = &mut self.moves[*index];

@@ -20,6 +20,22 @@ impl Piece {
         format!("{}{}", color, kind)
     }
 
+    pub fn to_str_fen_format(&self) -> String {
+        let kind = match self.kind {
+            PieceType::Bishop => "b",
+            PieceType::Knight => "n",
+            PieceType::King => "k",
+            PieceType::Pawn => "p",
+            PieceType::Queen => "q",
+            PieceType::Rook => "r",
+        };
+
+        match self.color {
+            ChessColor::White => kind.to_uppercase(),
+            ChessColor::Black => kind.to_string(),
+        }
+    }
+
     pub fn from_str(str: &str) -> Option<Self> {
         let kind = match str.to_lowercase().as_str() {
             "p" => PieceType::Pawn,

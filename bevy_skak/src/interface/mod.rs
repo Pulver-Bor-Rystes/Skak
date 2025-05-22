@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use types::{MousePosition, TileSize, WindowSize};
 use ui::{hover::spawn_hightlight_on_hovered, placement::update_placement, possible_moves::{remove_hightlights, spawn_highlights}, select::*, *};
 
+use crate::bevy_chess::BevyChessBoard;
+
 
 mod ui;
 mod types;
@@ -31,7 +33,7 @@ impl Plugin for InterfacePlugin {
             .insert_resource(MousePosition(None))
             .insert_resource(UIOrientation(true))
             .add_systems(Startup, (setup_black_white_tiles, setup_camera))
-            .add_systems(PreUpdate, (update_mouse_pos, remove_chess_pieces))
+            .add_systems(PreUpdate, (on_board_change, update_mouse_pos, remove_chess_pieces).chain())
             .add_systems(Update, (
                 // ui
                 update_tile_size,
@@ -40,7 +42,6 @@ impl Plugin for InterfacePlugin {
                 spawn_chess_pieces,
                 turn_ui_around,
                 on_turn_ui_around,
-                on_board_change,
 
                 // select
                 select_piece,
@@ -54,9 +55,17 @@ impl Plugin for InterfacePlugin {
                 // possible_moves.rs
                 (remove_hightlights, spawn_highlights).chain(),
                 
-
+                // my own
+                to_fen,
             ))
         ;
     }
 }
 
+
+
+fn to_fen(chessboard: Res<BevyChessBoard>, keys: Res<ButtonInput<KeyCode>>) {
+    if keys.just_pressed(KeyCode::KeyF) {
+        chessboard.0.to_fen();
+    }
+}
