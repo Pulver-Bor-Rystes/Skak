@@ -1,6 +1,8 @@
 **/*node_modules/
 **/*/target
 
+**/*/ChessPlusPlus
+
 .DS_Store
 
 web/.svelte-kit
