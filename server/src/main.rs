@@ -2,17 +2,17 @@ const PORT: u16 = 4000;
 
 // Add HttpRequest and HttpResponse
 use actix::*;
-use actix_web::{
-    middleware,
-    web::{self, Data},
-    App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
-};
+use actix_web::*;
 use actix_web_actors::ws;
-use actors::{server::Server, session::Session};
+use refactor::{server::server_actor::Server, sockets::SocketSession};
+use web::Data;
 
-mod actors;
+mod refactor;
+
+
+// mod actors;
 mod std_format_msgs;
-mod tests;
+// mod tests;
 
 async fn index() -> impl Responder {
     HttpResponse::Ok()
@@ -28,7 +28,7 @@ async fn websocket(
 ) -> Result<HttpResponse, Error> {
     let server_ref = server_addr.get_ref().clone();
     // ws::start(Session::new(server_ref), &req, stream)
-    ws::start(Session::new(server_ref), &req, stream)
+    ws::start(SocketSession::new(server_ref), &req, stream)
 }
 
 #[actix_web::main]
