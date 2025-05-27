@@ -3,12 +3,12 @@ use engine_actor::EngineAPI;
 use super::*;
 
 
-impl Handler<GameAPI> for Server {
+impl Handler<ServerGameAPI> for Server {
     type Result = bool;
 
-    fn handle(&mut self, msg: GameAPI, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerGameAPI, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            GameAPI::YourTurn(game_id, username, fen, time_left) => {
+            ServerGameAPI::YourTurn(game_id, username, fen, time_left) => {
                 let user = self
                     .clients
                     .iter()
@@ -31,8 +31,10 @@ impl Handler<GameAPI> for Server {
                     .iter()
                     .find(|(engine_name, _addr)| engine_name == &&username);
 
-                if engine.is_some() {
-                    let (_engine_name, addr) = engine.unwrap();
+                if let Some(engine) = engine {
+                    // bed engine om at søge efter move, og når de finder det bedste, så fortæl spillet at trækket skal spilles!
+                    let (_engine_name, addr) = engine;                    
+                    
                     addr.send(EngineAPI::Search(fen, time_left))
                         .into_actor(self)
                         .then(move |res, act, ctx| {

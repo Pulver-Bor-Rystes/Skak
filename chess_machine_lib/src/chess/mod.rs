@@ -7,17 +7,21 @@ use chess_types::*;
 
 
 impl ChessBoard {
-
     fn fake(&mut self) -> Self {
         let mut clone = self.clone();
         clone.real = false;
         clone
     }
 
+    pub fn set_naming_convention(&mut self, naming_convention: NamingConvention) -> &mut Self {
+        self.naming_convention = naming_convention;
+        self.calc_valid_moves(false);
+        self
+    }
+
     fn empty() -> Self {
         Self {
-            fen_str: String::new(),
-            real: true,
+            
             pieces: [None; 144],
             en_passant: None,
             turn: ChessColor::White,
@@ -31,14 +35,17 @@ impl ChessBoard {
             // changes
             board_changed: false,
             turn_changed: false,
+
+            // meta
+            fen_str: String::new(),
+            real: true,
+            naming_convention: NamingConvention::Standard,
         }
     }
     
     
     pub fn default() -> Self {
         let mut s = Self {
-            fen_str: String::new(),
-            real: true,
             pieces: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
                 None, None, None, None, None, None, None, None, None, None, None, None,
@@ -62,6 +69,10 @@ impl ChessBoard {
 
             board_changed: false,
             turn_changed: false,
+
+            fen_str: String::new(),
+            real: true,
+            naming_convention: NamingConvention::Standard,
         };
 
         s.calc_valid_moves(false);
@@ -70,11 +81,21 @@ impl ChessBoard {
     }
 
 
-
     pub fn from_fen(fen_str: &str) -> Self {
         let mut chessboard = ChessBoard::empty();
+        chessboard.load_fen(fen_str);
+        chessboard
+    }
+
+
+    pub fn load_fen(&mut self, fen_str: &str) -> &mut Self {
+
+        // empty all the pieces
+        for i in 0..64 {
+            self.pieces[Index144::from8(i).u12()] = None;
+        }
         
-        chessboard.fen_str = fen_str.to_string();
+        self.fen_str = fen_str.to_string();
         // fen er delt ind i 6 dele. Lad os dele dem op
 
         // counteren for lov at starte på 1, så er det lidt nemmere at følge med på wikipedia siden
@@ -96,7 +117,7 @@ impl ChessBoard {
                     
                     if let Some(piece) = piece {
                         // println!("placing {} at {}", piece.kind.to_str_name(), index.to_str());
-                        chessboard.pieces[index.u12()] = Some(piece);
+                        self.pieces[index.u12()] = Some(piece);
                     }
                     else {
                         // check if letter is a number and store the value
@@ -113,7 +134,7 @@ impl ChessBoard {
 
             // 2. active color
             if counter == 2 {
-                chessboard.turn = match part {
+                self.turn = match part {
                     "w" => ChessColor::White,
                     "b" => ChessColor::Black,
                     _ => panic!("Invalid turn: {}", part),
@@ -125,15 +146,15 @@ impl ChessBoard {
                 // disable by default
 
                 // black
-                chessboard.change_index_has_moved(30, true);
-                chessboard.change_index_has_moved(30-4, true);
-                chessboard.change_index_has_moved(30+3, true);
+                self.change_index_has_moved(30, true);
+                self.change_index_has_moved(30-4, true);
+                self.change_index_has_moved(30+3, true);
 
 
                 // white
-                chessboard.change_index_has_moved(114, true);
-                chessboard.change_index_has_moved(114-4, true);
-                chessboard.change_index_has_moved(114+3, true);
+                self.change_index_has_moved(114, true);
+                self.change_index_has_moved(114-4, true);
+                self.change_index_has_moved(114+3, true);
                 
                 
                 // castling
@@ -142,23 +163,23 @@ impl ChessBoard {
                     
                     match letter {
                         "K" => {
-                            chessboard.change_index_has_moved(114, false);
-                            chessboard.change_index_has_moved(114+3, false);
+                            self.change_index_has_moved(114, false);
+                            self.change_index_has_moved(114+3, false);
                             // println!("White can castle king side");
                         },
                         "Q" => {
-                            chessboard.change_index_has_moved(114, false);
-                            chessboard.change_index_has_moved(114-4, false);
+                            self.change_index_has_moved(114, false);
+                            self.change_index_has_moved(114-4, false);
                             // println!("White can castle queen side");
                         },
                         "k" => {
-                            chessboard.change_index_has_moved(30, false);
-                            chessboard.change_index_has_moved(30+3, false);
+                            self.change_index_has_moved(30, false);
+                            self.change_index_has_moved(30+3, false);
                             // println!("Black can castle king side");
                         },
                         "q" => {
-                            chessboard.change_index_has_moved(30, false);
-                            chessboard.change_index_has_moved(30-4, false);
+                            self.change_index_has_moved(30, false);
+                            self.change_index_has_moved(30-4, false);
                             // println!("Black can castle queen side");
                         },
                         "-" => {},
@@ -181,7 +202,7 @@ impl ChessBoard {
                         to_attack.clone().add(-12).clone()
                     };
 
-                    chessboard.en_passant = Some(EnPassant {
+                    self.en_passant = Some(EnPassant {
                         to_attack,
                         to_remove,
                     });
@@ -191,7 +212,7 @@ impl ChessBoard {
             // 5. halfmove clock
             if counter == 5 {
                 if let Ok(halfmove_clock) = part.parse::<i32>() {
-                    chessboard.halfmove_clock = halfmove_clock;
+                    self.halfmove_clock = halfmove_clock;
                 }
                 else {
                     panic!("Invalid halfmove clock: {}", part);
@@ -201,7 +222,7 @@ impl ChessBoard {
             // 6. fullmove number
             if counter == 6 {
                 if let Ok(fullmove_number) = part.parse::<i32>() {
-                    chessboard.fullmove_number = fullmove_number;
+                    self.fullmove_number = fullmove_number;
                 }
                 else {
                     panic!("Invalid fullmove number: {}", part);
@@ -211,10 +232,10 @@ impl ChessBoard {
         }
 
 
-        chessboard.calc_valid_moves(false);
+        self.calc_valid_moves(false);
         
         
-        chessboard
+        self
     }
 
 
@@ -318,9 +339,9 @@ impl ChessBoard {
         
         
         // check
-        println!("\n\nFen Produced: {}", fen);
-        println!("Correct Fen:  {}", self.fen_str);
-        println!(" -> Fen parsing went ok? {}", self.fen_str.contains(&fen));
+        // println!("\n\nFen Produced: {}", fen);
+        // println!("Correct Fen:  {}", self.fen_str);
+        // println!(" -> Fen parsing went ok? {}", self.fen_str.contains(&fen));
 
         fen
     }
@@ -371,6 +392,17 @@ impl ChessBoard {
             
             break;
         }
+    }
+
+
+    pub fn is_move_name_valid(&self, move_name: &str) -> bool {
+        for mv in &self.moves {
+            if mv.name == move_name {
+                return true;
+            }
+        }
+
+        false
     }
 
 
@@ -492,10 +524,10 @@ impl ChessBoard {
 
         self.generate_name_for_each_move();
 
-        println!("calculated {} actual moves", self.moves.len());
+        // println!("calculated {} actual moves", self.moves.len());
 
         for mv in &self.moves {
-            println!(" -> {}", mv.name);
+            // println!(" -> {}", mv.name);
         }
     }
 

@@ -6,13 +6,14 @@ pub mod user_related_api;
 pub mod game_related_api;
 
 
-
 // API's
 
 
 #[derive(Message)]
 #[rtype(result = "bool")]
-pub enum UserAPI {
+pub enum ServerUserAPI {
+    /// String = Username
+    GetRunningGame(String),
     RequestAvailableBots(usize),
     /// String = Username
     RequestGameState(String),
@@ -29,7 +30,7 @@ pub enum UserAPI {
 
 #[derive(Message)]
 #[rtype(result = "bool")]
-pub enum GameAPI {
+pub enum ServerGameAPI {
     /// Fortæller brugeren eller engine at det er deres tur¨
     /// 
     /// 1. game id

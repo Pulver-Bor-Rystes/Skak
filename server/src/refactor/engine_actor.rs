@@ -111,14 +111,17 @@ impl Engine {
 
     fn search(&mut self, position: String, max_time: std::time::Duration) -> String {
         self.write("ucinewgame");
-        self.write(&format!("position {}", position));
+        self.write(&format!("position fen {}", position));
         self.write(&format!("go movetime {}", max_time.as_millis()));
+
+        println!(" >> engine ({}) is searching...\nwith fen string: {}", self.name, position);
 
         let output = self.read();
         let line = output.last();
         match line {
             Some(line) => {
                 let bestmove = line.split_whitespace().nth(1).unwrap();
+                println!(" >> best move found: {}", bestmove);
                 return bestmove.to_string();
             }
             None => {}

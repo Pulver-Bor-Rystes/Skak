@@ -79,6 +79,11 @@ pub mod content_templates {
         pub password: String,
     }
 
+    #[derive(Deserialize, Debug, Clone)]
+    pub struct PlayMove {
+        pub chess_move: String,
+    }
+
     impl Login {
         pub fn new(username: impl ToString, password: impl ToString) -> Self {
             Login {

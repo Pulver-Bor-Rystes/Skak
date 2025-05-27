@@ -8,6 +8,9 @@ pub struct Index144(i32);
 
 pub enum BoardType { Regular, Large }
 
+#[derive(Clone)]
+pub enum NamingConvention { Standard, LongAlgebraicNotation }
+
 
 const INVALID_INDEXES: [i32; 80] = [9, 83, 84, 135, 141, 120, 138, 24, 48, 85, 123, 139, 7, 121, 6, 136, 25, 35, 142, 106, 128, 22, 70, 124, 34, 4, 5, 23, 71, 20, 127, 2, 37, 109, 129, 122, 143, 3, 107, 36, 140, 73, 0, 21, 125, 14, 18, 132, 72, 133, 96, 108, 19, 130, 12, 16, 1, 95, 15, 126, 59, 131, 97, 119, 58, 17, 10, 61, 118, 46, 94, 13, 137, 47, 82, 8, 60, 134, 49, 11 ];
 const LAST_ROWS: [i32; 16] = [26, 27, 28, 29, 30, 31, 32, 33, 110, 111, 112, 113, 114, 115, 116, 117];
@@ -186,8 +189,6 @@ impl From<i32> for Index144 {
 
 #[derive(Clone)]
 pub struct ChessBoard {
-    pub fen_str: String,
-    pub real: bool,
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
     pub turn: ChessColor,
@@ -198,9 +199,14 @@ pub struct ChessBoard {
     pub halfmove_clock: i32,
     pub fullmove_number: i32,
     
-    // changes
+    // CHANGE DETECTION
     pub board_changed: bool,
     pub turn_changed: bool,
+
+    // META
+    pub fen_str: String,
+    pub real: bool,
+    pub naming_convention: NamingConvention,
 }
 
 
@@ -256,8 +262,34 @@ impl Move {
         self.file_and_rank().1
     }
 
-
     pub fn make_name(&mut self, chessboard: &ChessBoard, show_file: bool, show_rank: bool) {
+        match chessboard.naming_convention {
+            NamingConvention::Standard => self.make_name_standard(chessboard, show_file, show_rank),
+            NamingConvention::LongAlgebraicNotation => self.make_name_lan(chessboard),
+        }
+    }
+
+    fn make_name_lan(&mut self, chessboard: &ChessBoard) {
+        let capture_flag = match chessboard.get(self.to()).is_some() {
+            true => "",
+            false => "",
+        };
+
+        let promotion_flag = match self.promote {
+            Some(promotion) => match promotion {
+                Promotion::Queen => "q",
+                Promotion::Bishop => "b",
+                Promotion::Knight => "n",
+                Promotion::Rook => "r",
+            },
+            None => "",
+        };
+
+        // from .. capture? .. to .. promotion
+        self.name = format!("{}{}{}{}", self.from().to_str(), capture_flag, self.to().to_str(), promotion_flag);
+    }
+
+    fn make_name_standard(&mut self, chessboard: &ChessBoard, show_file: bool, show_rank: bool) {
         // De forskellige flags
         // 1. PieceType
         let piece = chessboard.get(self.from()).unwrap();

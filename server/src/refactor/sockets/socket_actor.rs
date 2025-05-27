@@ -10,6 +10,7 @@ pub struct Request {
 
 #[derive(Debug)]
 pub enum Requirement {
+    InGame,
     LoggedIn,
     NotLoggedIn,
 }
@@ -21,6 +22,7 @@ use Requirement::*;
 impl Requirement {
     pub fn meet_demands(&self, ctx: &SessionContext) -> bool {
         match self {
+            Self::InGame => ctx.session.game_addr.is_some(),
             Self::LoggedIn => ctx.is_logged_in(),
             Self::NotLoggedIn => !ctx.is_logged_in(),
         }
@@ -137,6 +139,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SocketSession {
                     Request { topic: "getstate".into(), handler: socket_endpoint::getstate, requires: [LoggedIn].into() },
                     Request { topic: "newgame".into(), handler: socket_endpoint::newgame, requires: [LoggedIn].into() },
                     Request { topic: "getbots".into(), handler: socket_endpoint::getbots, requires: [LoggedIn].into() },
+                    Request { topic: "play_move".into(), handler: socket_endpoint::play_move, requires: [InGame].into() },
                 ].into();
 
 
@@ -225,12 +228,8 @@ impl Handler<SocketSessionAPI> for SocketSession {
 
     fn handle(&mut self, msg: SocketSessionAPI, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            SocketSessionAPI::UpdateGameAddr(addr) => {
-                self.game_addr = Some(addr);
-            },
-            SocketSessionAPI::RemoveGameAddr => {
-                self.game_addr = None;
-            },
+            SocketSessionAPI::UpdateGameAddr(addr) => self.game_addr = Some(addr),
+            SocketSessionAPI::RemoveGameAddr => self.game_addr = None,
         }
 
         true

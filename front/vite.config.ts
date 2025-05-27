@@ -9,5 +9,8 @@ export default defineConfig({
 	plugins: [sveltekit(), wasm(), topLevelAwait()],
 	server: {
 		port: 3000,
+		fs: {
+			allow: ['..'], // allow serving files from parent dirs
+		}
 	}
 });

@@ -15,9 +15,9 @@ use socket_endpoint::SessionContext;
 use std::time::Instant;
 use crate::std_format_msgs::IncomingWsMsg;
 use actix_web_actors::ws::{self, WebsocketContext};
-use server::GameAPI;
+use server::ServerGameAPI;
 use serde_json::Error as JsonError;
-use server::UserAPI;
+use server::ServerUserAPI;
 use crate::std_format_msgs::content_templates as content;
 use crate::std_format_msgs::*;
 

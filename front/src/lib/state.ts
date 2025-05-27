@@ -7,6 +7,10 @@ export const logged_in = writable(false);
 export const username = writable('not logged in');
 export const cookie = writable('');
 
+export const c_did_init = writable(false);
+export const board_id = writable(-1);
+export const color = writable(false);
+
 export const active_players = writable([]);
 export const engines = writable([]);
 

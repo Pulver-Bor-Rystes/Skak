@@ -1,4 +1,4 @@
-use chess::chess_types::{ChessBoard, ChessColor, Index144, Move};
+use chess::chess_types::{ChessBoard, ChessColor, Index144, Move, NamingConvention};
 use wasm_bindgen::prelude::*;
 pub mod chess;
 pub mod extra;
@@ -24,12 +24,27 @@ pub fn new_chessboard(fen_str: &str) -> usize {
     let mut index = 0;
     
     BOARDS.with(|boards| {
-        boards.borrow_mut().push(ChessBoard::from_fen(fen_str));
+        let new_board = ChessBoard::default()
+            .load_fen(fen_str)
+            .set_naming_convention(NamingConvention::LongAlgebraicNotation)
+            .to_owned();
+        
+        // gemmer skakbræt
+        boards.borrow_mut().push(new_board);
 
         index = boards.borrow().len() - 1;
     });
 
     return index;
+}
+
+#[wasm_bindgen]
+pub fn load_fen(board_id: usize, fen_str: &str) {
+    BOARDS.with(|boards| {
+        let board = &mut boards.borrow_mut()[board_id];
+
+        board.load_fen(fen_str);
+    });
 }
 
 #[wasm_bindgen]

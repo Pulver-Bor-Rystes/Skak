@@ -1,12 +1,11 @@
 <script lang="ts">
     import Button from '$lib/components/button.svelte';
     import Login from '$lib/components/debug/login.svelte';
-
-    // import { greet } from 'chess_machine_lib';
-    import { greet_test } from '$lib';
-    
-    import { active_players, engines, username } from '$lib/state';
+    import { new_board } from '$lib';
+    import { active_players, board_id, engines, username } from '$lib/state';
     import { socket } from '$lib/ws';
+    import Chessboard from '$lib/components/board/chessboard.svelte';
+    
 
     function new_game(engine: string) {
         $socket.send("newgame", {
@@ -17,9 +16,17 @@
 
     function click() {
         $socket.send("getstate", {})
-        greet_test();
     }
+
+
+    $socket.on("state", async ({result, content}) => {
+        console.log("state: ", result, content);
+        
+        await new_board(content);
+    });
 </script>
+
+
 
 <div class="m-5 shadow border-rounded bg-[#ffffff2d] w-128 rounded-xl grid" style="grid-template-columns: 30% auto;">
     <div class="m-1">
@@ -51,6 +58,9 @@
     <div>
         
     </div>
-
-
 </div>
+
+
+{#if $board_id != -1}
+    <Chessboard/>
+{/if}

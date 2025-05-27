@@ -54,6 +54,8 @@ class Socket {
 
             let handled = false;
 
+            console.log("message received:", msg);
+
             // make an error if topic contains "no topic"
             if (msg.topic == "no topic") {
                 console.error("server responded with topic: 'no topic' - Check your request\n", msg.payload)

@@ -3,12 +3,20 @@ use super::*;
 
 
 
-impl Handler<UserAPI> for Server {
+impl Handler<ServerUserAPI> for Server {
     type Result = bool;
 
-    fn handle(&mut self, msg: UserAPI, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerUserAPI, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            UserAPI::RequestAvailableBots(id) => {
+            ServerUserAPI::GetRunningGame(username) => {
+                let game = self.find_game(&username);
+
+                match game {
+                    Some(game) => self.set_game_addr(&username, game.addr.clone()),
+                    None => {},
+                }
+            }
+            ServerUserAPI::RequestAvailableBots(id) => {
                 let mut engines = Vec::new();
                 let keys = self.engines.keys();
 
@@ -19,14 +27,14 @@ impl Handler<UserAPI> for Server {
                 self.deploy_msg(vec![id], OutgoingWsMsg::content("engines", engines));
                 
             }
-            UserAPI::RequestGameState(username) => {
+            ServerUserAPI::RequestGameState(username) => {
                 let game = self.find_game(&username);
 
                 if game.is_some() {
                     game.unwrap().addr.do_send(game_actor::API::GetState(username));
                 }
             }
-            UserAPI::NewGame(p1, opponent, time_format) => {
+            ServerUserAPI::NewGame(p1, opponent, time_format) => {
                 let id = self.rng.gen::<usize>();
 
                 // er en af spillerene i gang med et spil?
@@ -72,7 +80,7 @@ impl Handler<UserAPI> for Server {
                 self.games.insert(id, GameData { addr, p1, p2 });
 
             }
-            UserAPI::SetGameAddr(username, game) => {
+            ServerUserAPI::SetGameAddr(username, game) => {
                 self.set_game_addr(&username, game);
             }
         }
