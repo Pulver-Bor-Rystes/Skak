@@ -1,4 +1,6 @@
-use crate::{bevy_chess::BevyChessBoard, extra::iter_len};
+use chess_machine_lib::extra::iter_len;
+
+use crate::bevy_chess::BevyChessBoard;
 
 use super::*;
 

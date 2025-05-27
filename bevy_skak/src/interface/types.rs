@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-
-use crate::chess::chess_types::Index144;
+use chess_machine_lib::chess::chess_types::Index144;
 
 
 

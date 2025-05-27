@@ -1,5 +1,6 @@
 use bevy::{color::palettes::css::{BEIGE, WHITE}, picking::pointer::PointerLocation, prelude::*};
-use crate::{bevy_chess::BevyChessBoard, chess::chess_types::{BoardType, Index144}, extra::index_to_pixel_coords};
+use crate::bevy_chess::BevyChessBoard;
+use chess_machine_lib::{chess::chess_types::{BoardType, Index144}, extra::index_to_pixel_coords};
 use super::types::*;
 use select::*;
 

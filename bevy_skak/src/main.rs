@@ -2,10 +2,8 @@ use bevy::prelude::*;
 use bevy_chess::BevyChessPlugin;
 use interface::InterfacePlugin;
 
-mod chess;
 mod bevy_chess;
 mod interface;
-mod extra;
 
 
 fn main() {

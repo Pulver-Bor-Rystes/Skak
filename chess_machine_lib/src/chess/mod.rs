@@ -342,7 +342,7 @@ impl ChessBoard {
     }
 
 
-    fn get(&self, index: impl Into<Index144>) -> Option<&Piece> {
+    pub fn get(&self, index: impl Into<Index144>) -> Option<&Piece> {
         let index: Index144 = index.into();
         self.pieces[index.u12()].as_ref()
     }
