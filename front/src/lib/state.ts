@@ -15,7 +15,7 @@ export const active_players = writable([]);
 export const engines = writable([]);
 
 socket.subscribe(socket => {
-    socket.on("active_players", ({ result, content }) => {
+    socket.on("active_users", ({ result, content }) => {
         if (!result) {
             console.error("active_players went wrong", content);
             return;

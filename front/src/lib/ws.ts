@@ -54,7 +54,7 @@ class Socket {
 
             let handled = false;
 
-            console.log("message received:", msg);
+            // console.log("message received:", msg);
 
             // make an error if topic contains "no topic"
             if (msg.topic == "no topic") {

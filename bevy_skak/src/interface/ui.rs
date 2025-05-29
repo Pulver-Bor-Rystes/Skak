@@ -72,9 +72,9 @@ pub fn setup_black_white_tiles(
             }
 
             let mesh_color = match color {
-                true => BEIGE,
-                false => WHITE,
-            };
+                true => Srgba::hex("#f0d9b5"),
+                false => Srgba::hex("b58863"),
+            }.unwrap();
 
             let parent = commands.spawn((
                 Name::new(format!("Tile: ({})", index.to_str())),

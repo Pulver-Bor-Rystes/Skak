@@ -28,6 +28,3 @@ pub mod game_actor;
 pub mod server;
 pub mod sockets;
 
-pub mod auth;
-pub mod types;
-pub mod validate;

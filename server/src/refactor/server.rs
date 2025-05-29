@@ -165,7 +165,7 @@ impl Handler<UpdateSessionData> for Server {
         match msg {
             Usd::Connect(sess_addr) => {
                 // Gemmer klienten, så vi altid kan kommunikere til den
-                let id = self.rng.gen::<usize>();
+                let id = self.generate_id();
                 let client = SessionData::new(sess_addr);
                 self.clients.insert(id, client);
 

@@ -4,31 +4,32 @@ const PORT: u16 = 4000;
 use actix::*;
 use actix_web::*;
 use actix_web_actors::ws;
-use refactor::{server::server_actor::Server, sockets::SocketSession};
+use client_thread::ClientThread;
+use server_thread::ServerThread;
 use web::Data;
 
-mod refactor;
 
+mod server_thread;
+mod client_thread;
+mod game_thread;
+mod engine_thread;
 
-// mod actors;
+pub mod auth;
+pub mod types;
+pub mod validate;
+
+// mod refactor;
 mod std_format_msgs;
-// mod tests;
-
-async fn index() -> impl Responder {
-    HttpResponse::Ok()
-        .content_type("text/html")
-        .body("<h1>Hej Rasmus</h1>")
-}
 
 // WebSocket handshake and start `MyWebSocket` actor.
 async fn websocket(
     req: HttpRequest,
     stream: web::Payload,
-    server_addr: web::Data<Addr<Server>>,
+    server_addr: web::Data<Addr<ServerThread>>,
 ) -> Result<HttpResponse, Error> {
     let server_ref = server_addr.get_ref().clone();
     // ws::start(Session::new(server_ref), &req, stream)
-    ws::start(SocketSession::new(server_ref), &req, stream)
+    ws::start(ClientThread::new(server_ref), &req, stream)
 }
 
 #[actix_web::main]
@@ -37,16 +38,12 @@ async fn main() -> std::io::Result<()> {
     // print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
     println!("starting HTTP server at http://localhost:4000");
 
-    let server = Server::new().start();
+    let server = ServerThread::new().start();
 
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(server.clone()))
-            // .app_data(Data::new(juules_engine.clone()))
-            // .app_data(Data::new(stockfish_engine.clone()))
-            .service(web::resource("/").to(index))
-            // Add the WebSocket route
-            .service(web::resource("/api/ws").route(web::get().to(websocket)))
+            .service(web::resource("/api/ws").route(web::get().to(websocket))) // Add the WebSocket route
             .wrap(middleware::Logger::default())
     })
     .workers(2)
