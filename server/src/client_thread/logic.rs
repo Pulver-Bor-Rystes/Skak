@@ -1,10 +1,8 @@
 use std::time::Instant;
 use actix::Addr;
 use actix_web_actors::ws::WebsocketContext;
-
-use crate::{auth, game_thread::types::TimeFormat, server_thread::{api::{server_thread_api}, ServerThread}, std_format_msgs::{content_templates, IncomingWsMsg, OutgoingWsMsg}};
+use crate::{auth, game_thread::types::TimeFormat, server_thread::{self, ServerThread}, std_format_msgs::{content_templates, IncomingWsMsg, OutgoingWsMsg}};
 use super::ClientThread;
-use server_thread_api as ServerThreadAPI;
 
 enum RequestRequirement {
     LoggedIn,
@@ -99,7 +97,7 @@ impl ClientThread {
         match auth::login(msg.content) {
             Ok(success) => {
                 self.username = Some(username.clone());
-                self.server_addr.do_send(ServerThreadAPI::CommandsAPI::ClientLogin(username, self.addr.clone().unwrap()));
+                self.server_addr.do_send(server_thread::api::CommandsAPI::ClientLogin(username, self.addr.clone().unwrap()));
                 ctx.text(OutgoingWsMsg::content(&payload.topic, success).serialize());
             }
             Err(err) => ctx.text(OutgoingWsMsg::error(&payload.topic, err).serialize()),
@@ -115,14 +113,14 @@ impl ClientThread {
         let opponent = msg.content.username;
         let time_format = TimeFormat::from(&msg.content.timeformat);
 
-        self.server_addr.do_send(ServerThreadAPI::GameCommandsAPI::NewGame(me, opponent, time_format));
+        self.server_addr.do_send(server_thread::api::GameCommandsAPI::NewGame(me, opponent, time_format));
 
         Ok(())
     }
 
 
     fn get_state(&mut self, _original_text: &str, _payload: &IncomingWsMsg, _ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
-        use ServerThreadAPI::GameCommandsAPI::*;
+        use server_thread::api::GameCommandsAPI::*;
 
         let id = self.id.unwrap();
         let username = self.username.clone().unwrap();
@@ -135,14 +133,14 @@ impl ClientThread {
     
 
     fn get_bots(&mut self, _original_text: &str, _payload: &IncomingWsMsg, _ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
-        self.server_addr.do_send(ServerThreadAPI::GameCommandsAPI::GetBots(self.id.unwrap()));
+        self.server_addr.do_send(server_thread::api::GameCommandsAPI::GetBots(self.id.unwrap()));
         Ok(())
     }
 
     fn play_move(&mut self, original_text: &str, _payload: &IncomingWsMsg, _ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
         let msg: IncomingWsMsg<content_templates::PlayMove> = serde_json::from_str(original_text)?;
         
-        self.server_addr.do_send(ServerThreadAPI::GameCommandsAPI::PlayMove(self.username.clone().unwrap(), msg.content.chess_move));
+        self.server_addr.do_send(server_thread::api::GameCommandsAPI::PlayMove(self.username.clone().unwrap(), msg.content.chess_move));
         Ok(())
     }
 }

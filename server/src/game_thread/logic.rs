@@ -1,7 +1,7 @@
 
 use actix::prelude::*;
 use chess_machine_lib::chess::chess_types::{ChessBoard, ChessColor, NamingConvention};
-use crate::{server_thread::ServerThread, server_thread::api::server_thread_api as ServerThreadAPI};
+use crate::server_thread::{self, ServerThread};
 use super::{types::TimeFormat, GameThread};
 
 impl GameThread {
@@ -44,6 +44,6 @@ impl GameThread {
         println!("\n -----> TURN: {}", username);
 
 
-        self.server_addr.do_send(ServerThreadAPI::ClientCommandsAPI::NotifyYourTurn(self.id, username, self.chessboard.to_fen()));
+        self.server_addr.do_send(server_thread::api::ClientCommandsAPI::NotifyYourTurn(self.id, username, self.chessboard.to_fen()));
     }
 }

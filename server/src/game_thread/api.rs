@@ -1,22 +1,15 @@
 use actix::prelude::*;
-use crate::{server_thread::api::server_thread_api as ServerThreadAPI, std_format_msgs::OutgoingWsMsg};
-
+use crate::{server_thread, std_format_msgs::OutgoingWsMsg};
 use super::GameThread;
-use game_thread_api::*;
 
-pub mod game_thread_api {
-    use super::*;
-    
-    
-    #[derive(Message)]
-    #[rtype(result="bool")]
-    pub enum CommandsAPI {
-        RequestGameState(usize),
-        PlayMove(String),
-    }
-    
+
+
+#[derive(Message)]
+#[rtype(result="bool")]
+pub enum CommandsAPI {
+    RequestGameState(usize),
+    PlayMove(String),
 }
-
 
 
 impl Handler<CommandsAPI> for GameThread {
@@ -30,7 +23,7 @@ impl Handler<CommandsAPI> for GameThread {
                 let fen = self.chessboard.to_fen();
 
                 let msg = OutgoingWsMsg::content("state", fen);
-                self.server_addr.do_send(ServerThreadAPI::ToClientBrowserAPI::MessageToClientID(client_id, msg));
+                self.server_addr.do_send(server_thread::api::ToClientBrowserAPI::MessageToClientID(client_id, msg));
             },
             PlayMove(move_name) => {
                 if !self.chessboard.is_move_name_valid(&move_name) { return false }

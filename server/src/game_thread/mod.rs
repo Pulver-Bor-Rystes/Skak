@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use chess_machine_lib::chess::chess_types::ChessBoard;
-use crate::server_thread::{self, api::server_thread_api as ServerThreadAPI};
+use crate::server_thread::{self};
 
 pub mod api;
 pub mod types;
@@ -31,7 +31,8 @@ impl Actor for GameThread {
         let p1 = self.white_username.clone();
         let p2 = self.black_username.clone();
         
-        self.server_addr.do_send(ServerThreadAPI::ClientCommandsAPI::LeaveGame(p1));
-        self.server_addr.do_send(ServerThreadAPI::ClientCommandsAPI::LeaveGame(p2));
+        self.server_addr.do_send(server_thread::api::ClientCommandsAPI::LeaveGame(p1));
+        self.server_addr.do_send(server_thread::api::ClientCommandsAPI::LeaveGame(p2));
+        self.server_addr.do_send(server_thread::api::CommandsAPI::RemoveGame(self.id)); // remove game from server
     }
 }

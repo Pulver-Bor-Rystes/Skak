@@ -1,7 +1,7 @@
 use rand::Rng;
 use serde::Serialize;
 
-use crate::{client_thread::api::client_thread_api::{self, BrowserAPI}, std_format_msgs::OutgoingWsMsg};
+use crate::{client_thread::api::BrowserAPI, std_format_msgs::OutgoingWsMsg};
 
 use super::*;
 
