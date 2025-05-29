@@ -1,7 +1,5 @@
 const PORT: u16 = 4000;
 
-use std::{thread::sleep, time::Duration};
-
 // Add HttpRequest and HttpResponse
 use actix::*;
 use actix_web::*;
@@ -19,8 +17,6 @@ mod engine_thread;
 pub mod auth;
 pub mod types;
 pub mod validate;
-
-// mod refactor;
 mod std_format_msgs;
 
 // WebSocket handshake and start `MyWebSocket` actor.
@@ -30,7 +26,6 @@ async fn websocket(
     server_addr: web::Data<Addr<ServerThread>>,
 ) -> Result<HttpResponse, Error> {
     let server_ref = server_addr.get_ref().clone();
-    // ws::start(Session::new(server_ref), &req, stream)
     ws::start(ClientThread::new(server_ref), &req, stream)
 }
 
