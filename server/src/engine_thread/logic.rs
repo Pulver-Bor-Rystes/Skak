@@ -1,10 +1,14 @@
+use actix::Addr;
+
+use crate::server_thread::ServerThread;
+
 use super::{types::ResponseOverAfter, EngineThread};
 use std::{fmt::Display, io::{Read, Write}};
 
 
 
 impl EngineThread {
-    pub fn new(exe: &str) -> EngineThread {
+    pub fn new(exe: &str, server_addr: Addr<ServerThread>) -> EngineThread {
         let handle = std::process::Command::new(exe)
             .current_dir("../")
             .stdout(std::process::Stdio::piped())
@@ -13,6 +17,7 @@ impl EngineThread {
             .expect("fail");
 
         EngineThread {
+            server_addr,
             name: exe.to_string(),
             handle,
             response_over: ResponseOverAfter::Newlines(1),

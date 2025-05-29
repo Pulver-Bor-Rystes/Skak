@@ -1,3 +1,5 @@
+use crate::std_format_msgs::OutgoingWsMsg;
+
 use super::ClientThread;
 use actix::prelude::*;
 use serde::Serialize;
@@ -6,6 +8,10 @@ use serde::Serialize;
 pub mod client_thread_api {
     use actix::prelude::*;
     use serde::Serialize;
+
+    type FenString = String;
+
+
 
     #[derive(Message)]
     #[rtype(result="usize")]
@@ -18,6 +24,7 @@ pub mod client_thread_api {
     #[rtype(result="bool")]
     pub enum GameAPI {
         SetInGame(bool),
+        YourTurn(FenString),
     }
 
 
@@ -46,11 +53,12 @@ impl Handler<client_thread_api::IdentifierAPI> for ClientThread {
 impl Handler<client_thread_api::GameAPI> for ClientThread {
     type Result = bool;
     
-    fn handle(&mut self, msg: client_thread_api::GameAPI, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: client_thread_api::GameAPI, ctx: &mut Self::Context) -> Self::Result {
         use client_thread_api::GameAPI::*;
         
         match msg { 
             SetInGame(value) => self.in_game = value,
+            YourTurn(fen) => ctx.text(OutgoingWsMsg::content("state", fen).serialize()),
         };
 
         true

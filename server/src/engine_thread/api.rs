@@ -1,12 +1,19 @@
-use super::*;
+use actix::prelude::*;
+use std::time::Duration;
+use super::EngineThread;
+
+
+
+type FenString = String;
+
+
 
 
 #[derive(Message)]
 #[rtype(result = "String")]
 pub enum EngineThreadAPI {
-    Search(String, Duration),
+    Search(FenString, Duration),
 }
-
 
 
 impl Handler<EngineThreadAPI> for EngineThread {

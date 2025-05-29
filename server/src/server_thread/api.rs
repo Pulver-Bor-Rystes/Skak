@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use actix::prelude::*;
 use rand::Rng;
 use serde::Serialize;
-use crate::{client_thread::{api::client_thread_api as ClientThreadAPI, ClientThread}, game_thread::{api::game_thread_api as GameThreadAPI, types::TimeFormat, GameThread}, std_format_msgs::OutgoingWsMsg};
+use crate::{client_thread::{api::client_thread_api as ClientThreadAPI, ClientThread}, engine_thread::{self, api::EngineThreadAPI}, game_thread::{api::game_thread_api as GameThreadAPI, types::TimeFormat, GameThread}, std_format_msgs::OutgoingWsMsg};
 
 use super::{ServerThread, Username};
 use server_thread_api::*;
@@ -10,32 +12,40 @@ type ClientIdCallback = usize;
 type MeUsername = String;
 type OpponentUsername = String;
 
+type FenString = String;
+type GameID = usize;
 
 pub mod server_thread_api {
     use super::*;
 
-    impl Message for CommandsAPI { type Result = bool; }
+    #[derive(Message)]
+    #[rtype(result="bool")]
     pub enum CommandsAPI {
         ClientLogin(Username, Addr<ClientThread>),
     }
 
-    impl<M> Message for ToClientBrowserAPI<M> where M: Serialize + std::marker::Send + std::fmt::Debug { type Result = bool; }
+    #[derive(Message)]
+    #[rtype(result="bool")]
     pub enum ToClientBrowserAPI<M> where M: Serialize + std::marker::Send + std::fmt::Debug {
-        Message(usize, M),
+        MessageToClientID(usize, M),
+        MessageToUsername(Username, M),
     }
 
-    impl Message for ClientCommandsAPI { type Result = bool; }
+    #[derive(Message)]
+    #[rtype(result="bool")]
     pub enum ClientCommandsAPI {
-        LeaveGame(String),
+        LeaveGame(Username),
+        NotifyYourTurn(GameID, Username, FenString),
     }
 
-
-    impl Message for PassthroughGameAPI { type Result = bool; }
-    pub enum PassthroughGameAPI {
+    #[derive(Message)]
+    #[rtype(result="bool")]
+    pub enum GameCommandsAPI {
         NewGame(MeUsername, OpponentUsername, TimeFormat),
         /// ID viser hvilken klient serveren skal svare tilbage til
         GetBots(ClientIdCallback),
-        RequestGameState(ClientIdCallback, MeUsername),
+        RequestGameState(ClientIdCallback, Username),
+        PlayMove(Username, String),
     }
 
 }
@@ -69,12 +79,13 @@ impl Handler<CommandsAPI> for ServerThread {
 }
 
 
-impl<M> Handler<ToClientBrowserAPI<M>> for ServerThread where M: Serialize + std::marker::Send + std::fmt::Debug + 'static {
+impl<M> Handler<ToClientBrowserAPI<M>> for ServerThread where M: Serialize + std::marker::Send + std::fmt::Debug + Clone + 'static {
     type Result = bool;
 
     fn handle(&mut self, msg: ToClientBrowserAPI<M>, ctx: &mut Context<Self>) -> Self::Result {
         match msg {
-            ToClientBrowserAPI::Message(client_id, msg) => self.send_to_client_browser(client_id, msg),
+            ToClientBrowserAPI::MessageToClientID(client_id, msg) => self.send_to_client_browser(client_id, msg),
+            ToClientBrowserAPI::MessageToUsername(client_username, msg) => self.send_to_clients_browser(client_username, msg),
         };
 
         true
@@ -92,6 +103,37 @@ impl Handler<ClientCommandsAPI> for ServerThread {
                     if client_username != &username { continue }
                     client_thread.do_send(ClientThreadAPI::GameAPI::SetInGame(false));
                 }
+            },
+            ClientCommandsAPI::NotifyYourTurn(game_id, username, fen_string) => {
+                for (_, (client_username, client_thread)) in &self.clients {
+                    if client_username != &username { continue }
+                    client_thread.do_send(ClientThreadAPI::GameAPI::YourTurn(fen_string));
+                    return true;
+                }
+
+                for (engine_name, engine_thread) in &self.engines {
+                    if engine_name != &username { continue }
+
+                    let max_time = Duration::from_millis(250);
+                    let fen = fen_string.clone();
+                    // engine_thread.send(EngineThreadAPI::Search(fen_string.clone(), max_time));
+
+                    engine_thread.send(EngineThreadAPI::Search(fen, max_time))
+                        .into_actor(self)
+                        .then(move |res, server_thread, server_thread_ctx| {
+                            match res {
+                                Ok(chess_move) => {
+                                    let game = server_thread.games.get(&game_id).unwrap();
+
+                                    game.2.do_send(GameThreadAPI::CommandsAPI::PlayMove(chess_move));
+                                }
+                                _ => server_thread_ctx.stop(),
+                            }
+
+                            fut::ready(())
+                        })
+                        .wait(ctx);
+                }
             }
         };
 
@@ -100,12 +142,12 @@ impl Handler<ClientCommandsAPI> for ServerThread {
 }
 
 
-impl Handler<PassthroughGameAPI> for ServerThread {
+impl Handler<GameCommandsAPI> for ServerThread {
     type Result = bool;
 
-    fn handle(&mut self, msg: PassthroughGameAPI, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: GameCommandsAPI, ctx: &mut Context<Self>) -> Self::Result {
         match msg {
-            PassthroughGameAPI::NewGame(me_username, opponent_username, time_format) => {
+            GameCommandsAPI::NewGame(me_username, opponent_username, time_format) => {
                 // ingen af spillerne må være i gang med et spil!
                 if self.is_player_in_game(&me_username) { return false }
                 if self.is_player_in_game(&opponent_username) { return false }
@@ -131,7 +173,7 @@ impl Handler<PassthroughGameAPI> for ServerThread {
 
                 true
             },
-            PassthroughGameAPI::GetBots(id_to_answer) => {
+            GameCommandsAPI::GetBots(id_to_answer) => {
                 let mut engine_names = Vec::new();
 
                 for (engine_name, _) in &self.engines {
@@ -142,7 +184,7 @@ impl Handler<PassthroughGameAPI> for ServerThread {
 
                 true
             },
-            PassthroughGameAPI::RequestGameState(id_to_answer, username) => {
+            GameCommandsAPI::RequestGameState(id_to_answer, username) => {
                 let game = self
                     .games
                     .iter()
@@ -156,6 +198,20 @@ impl Handler<PassthroughGameAPI> for ServerThread {
 
                 true
             },
+            GameCommandsAPI::PlayMove(username, chess_move) => {
+                let game = self
+                    .games
+                    .iter()
+                    .find(|(_, (p1, p2, _))| {
+                        *p1 == username || *p2 == username
+                    });
+
+                if let Some((_, (_, _, game_thread))) = game {
+                    game_thread.do_send(GameThreadAPI::CommandsAPI::PlayMove(chess_move));
+                }
+
+                true
+            }
         }
     }
 }

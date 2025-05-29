@@ -1,6 +1,6 @@
 pub mod chess_types;
 use core::panic;
-use std::collections::HashMap;
+use std::{collections::HashMap, time::{Duration, Instant}};
 
 use chess_types::*;
 
@@ -21,7 +21,6 @@ impl ChessBoard {
 
     fn empty() -> Self {
         Self {
-            
             pieces: [None; 144],
             en_passant: None,
             turn: ChessColor::White,
@@ -40,6 +39,15 @@ impl ChessBoard {
             fen_str: String::new(),
             real: true,
             naming_convention: NamingConvention::Standard,
+            winner: None,
+
+            // time
+            clock: Clock {
+                white: Duration::from_secs(60 * 10),
+                black: Duration::from_secs(60 * 10),
+                increment: Duration::from_secs(0),
+                since_last_move: Instant::now(),
+            },
         }
     }
     
@@ -73,6 +81,15 @@ impl ChessBoard {
             fen_str: String::new(),
             real: true,
             naming_convention: NamingConvention::Standard,
+            winner: None,
+
+            // time
+            clock: Clock {
+                white: Duration::from_secs(60 * 10),
+                black: Duration::from_secs(60 * 10),
+                increment: Duration::from_secs(0),
+                since_last_move: Instant::now(),
+            },
         };
 
         s.calc_valid_moves(false);
@@ -407,6 +424,37 @@ impl ChessBoard {
 
 
     pub fn play(&mut self, chess_move: &Move) {
+        if self.winner.is_some() { return }
+        
+        
+        match self.turn {
+            ChessColor::White => {
+                let new_clock = self.clock.white.checked_sub(self.clock.since_last_move.elapsed() - self.clock.increment);
+                if let Some(new_clock) = new_clock {
+                    self.clock.white = new_clock;
+                    println!("white has {:?} left", self.clock.white);
+                }
+                else {
+                    self.winner = Some(Winner::Black);
+                    println!("Vi har fundet en vinder!\nTillykke {:?}", self.winner);
+                    return;
+                }
+            },
+            ChessColor::Black => {
+                let new_clock = self.clock.black.checked_sub(self.clock.since_last_move.elapsed() - self.clock.increment);
+                if let Some(new_clock) = new_clock {
+                    self.clock.black = new_clock;
+                    println!("black has {:?} left", self.clock.black);
+                }
+                else {
+                    self.winner = Some(Winner::White);
+                    println!("Vi har fundet en vinder!\nTillykke {:?}", self.winner);
+                    return;
+                }
+            },
+        }
+        
+        
         let was_capture = self.get(chess_move.to()).is_some();
         let was_pawn_advance = if let Some(Piece { kind: PieceType::Pawn, color: _, has_moved: _ }) = self.get(chess_move.from()) { true } else { false };
         
@@ -431,6 +479,25 @@ impl ChessBoard {
 
 
         self.calc_valid_moves(false);
+
+
+        if self.moves.len() == 0 {
+            self.winner = match self.turn {
+                ChessColor::White => Winner::Black,
+                ChessColor::Black => Winner::White
+            }.into();
+
+            println!("Vi har sgu en vinder! {:?}", self.winner);
+        }
+
+        if self.halfmove_clock >= 50 {
+            self.winner = Winner::Tie.into();
+            println!("Det blev uafgjort!");
+        }
+        
+        
+        
+        self.clock.since_last_move = Instant::now();
     }
 
     fn calc_valid_moves(&mut self, only_first_two_steps: bool) {

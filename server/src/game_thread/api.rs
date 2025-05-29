@@ -8,9 +8,11 @@ pub mod game_thread_api {
     use super::*;
     
     
-    impl Message for CommandsAPI { type Result = bool; }
+    #[derive(Message)]
+    #[rtype(result="bool")]
     pub enum CommandsAPI {
         RequestGameState(usize),
+        PlayMove(String),
     }
     
 }
@@ -28,10 +30,17 @@ impl Handler<CommandsAPI> for GameThread {
                 let fen = self.chessboard.to_fen();
 
                 let msg = OutgoingWsMsg::content("state", fen);
-                self.server_addr.do_send(ServerThreadAPI::ToClientBrowserAPI::Message(client_id, msg));
-
-                true
+                self.server_addr.do_send(ServerThreadAPI::ToClientBrowserAPI::MessageToClientID(client_id, msg));
             },
-        }
+            PlayMove(move_name) => {
+                if !self.chessboard.is_move_name_valid(&move_name) { return false }
+
+                self.chessboard.play_notation(&move_name);
+                // jeg vil gerne fortælle spillerne at vi der lige er blevet lavet et træk
+                self.notify_player_of_turn();
+            }
+        };
+
+        true
     }
 }

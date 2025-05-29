@@ -23,7 +23,8 @@ impl Actor for GameThread {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("GAME: started");
+        println!(" >> [GAME] Started");
+        self.on_spawn();
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {

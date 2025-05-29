@@ -50,6 +50,7 @@ impl ClientThread {
             Request { topic: "newgame".into(), requires: [LoggedIn].into(), handler: ClientThread::new_game },
             Request { topic: "getbots".into(), requires: [LoggedIn].into(), handler: ClientThread::get_bots },
             Request { topic: "getstate".into(), requires: [InGame].into(), handler: ClientThread::get_state },
+            Request { topic: "play_move".into(), requires: [InGame].into(), handler: ClientThread::play_move },
         ];
 
         let mut was_handled = false;
@@ -114,14 +115,14 @@ impl ClientThread {
         let opponent = msg.content.username;
         let time_format = TimeFormat::from(&msg.content.timeformat);
 
-        self.server_addr.do_send(ServerThreadAPI::PassthroughGameAPI::NewGame(me, opponent, time_format));
+        self.server_addr.do_send(ServerThreadAPI::GameCommandsAPI::NewGame(me, opponent, time_format));
 
         Ok(())
     }
 
 
     fn get_state(&mut self, _original_text: &str, _payload: &IncomingWsMsg, _ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
-        use ServerThreadAPI::PassthroughGameAPI::*;
+        use ServerThreadAPI::GameCommandsAPI::*;
 
         let id = self.id.unwrap();
         let username = self.username.clone().unwrap();
@@ -134,7 +135,14 @@ impl ClientThread {
     
 
     fn get_bots(&mut self, _original_text: &str, _payload: &IncomingWsMsg, _ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
-        self.server_addr.do_send(ServerThreadAPI::PassthroughGameAPI::GetBots(self.id.unwrap()));
+        self.server_addr.do_send(ServerThreadAPI::GameCommandsAPI::GetBots(self.id.unwrap()));
+        Ok(())
+    }
+
+    fn play_move(&mut self, original_text: &str, _payload: &IncomingWsMsg, _ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
+        let msg: IncomingWsMsg<content_templates::PlayMove> = serde_json::from_str(original_text)?;
+        
+        self.server_addr.do_send(ServerThreadAPI::GameCommandsAPI::PlayMove(self.username.clone().unwrap(), msg.content.chess_move));
         Ok(())
     }
 }

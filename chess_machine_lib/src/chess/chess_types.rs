@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use crate::extra::{index_144_to_64, index_64_to_144, index_64_to_algebraic};
 
 
@@ -186,7 +188,6 @@ impl From<i32> for Index144 {
 
 
 // Resources
-
 #[derive(Clone)]
 pub struct ChessBoard {
     pub pieces: [Option<Piece>; 144],
@@ -207,6 +208,24 @@ pub struct ChessBoard {
     pub fen_str: String,
     pub real: bool,
     pub naming_convention: NamingConvention,
+
+    pub winner: Option<Winner>,
+
+    // Time
+    pub clock: Clock,
+}
+
+#[derive(Clone, Debug)]
+pub enum Winner { White, Black, Tie }
+
+
+#[derive(Clone)]
+pub struct Clock {
+    pub white: Duration,
+    pub black: Duration,
+
+    pub increment: Duration,
+    pub since_last_move: Instant,
 }
 
 

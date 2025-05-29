@@ -1,5 +1,7 @@
 const PORT: u16 = 4000;
 
+use std::{thread::sleep, time::Duration};
+
 // Add HttpRequest and HttpResponse
 use actix::*;
 use actix_web::*;

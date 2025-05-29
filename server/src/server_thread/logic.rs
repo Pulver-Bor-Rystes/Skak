@@ -9,20 +9,9 @@ use super::*;
 
 impl ServerThread {
     pub fn new() -> Self {
-        let mut engines = HashMap::new();
-        engines.insert(
-            "juules".to_string(),
-            EngineThread::new("engine/ChessPlusPlus").start(),
-        );
-
-        engines.insert(
-            "stockfish".to_string(),
-            EngineThread::new("stockfish/stockfish").start(),
-        );
-        
         Self {
             clients: HashMap::new(),
-            engines,
+            engines: HashMap::new(),
             games: HashMap::new(),
             rng: rand::thread_rng(),
             ids: Vec::new(),
@@ -66,6 +55,15 @@ impl ServerThread {
     pub fn send_to_client_browser<M>(&self, id: usize, msg: M) where M: Serialize + std::marker::Send + std::fmt::Debug + 'static {
         if let Some((_, client_thread)) = self.clients.get(&id) {
             client_thread.do_send(BrowserAPI::Message(msg));
+        }
+    }
+
+    pub fn send_to_clients_browser<M>(&self, username: String, msg: M) where M: Serialize + std::marker::Send + std::fmt::Debug + Clone + 'static {
+        for (_, (client_username, client_thread)) in &self.clients {
+
+            if client_username == &username {
+                client_thread.do_send(BrowserAPI::Message(msg.clone()));
+            }
         }
     }
 
