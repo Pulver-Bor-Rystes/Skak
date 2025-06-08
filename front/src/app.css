@@ -15,12 +15,166 @@
     h3 {
         @apply text-xl;
     }
+
+    .line {
+        @apply border-2 my-rounded;
+    }
+
+    .auth_btn {
+        @apply border-2 my-rounded p-1 text-center;
+        @apply hover:cursor-pointer;
+    }
+    
+    :root {
+        --text-50: #eaf6fa;
+        --text-100: #d5edf6;
+        --text-200: #abdaed;
+        --text-300: #82c8e3;
+        --text-400: #58b5da;
+        --text-500: #2ea3d1;
+        --text-600: #2582a7;
+        --text-700: #1c627d;
+        --text-800: #124154;
+        --text-900: #09212a;
+        --text-950: #051015;
+
+        --background-50: #eaf5fa;
+        --background-100: #d5ecf6;
+        --background-200: #acd9ec;
+        --background-300: #82c6e3;
+        --background-400: #59b3d9;
+        --background-500: #2fa0d0;
+        --background-600: #2680a6;
+        --background-700: #1c607d;
+        --background-800: #134053;
+        --background-900: #09202a;
+        --background-950: #051015;
+
+        --primary-50: #ecf5f8;
+        --primary-100: #d9ecf2;
+        --primary-200: #b4d8e4;
+        --primary-300: #8ec5d7;
+        --primary-400: #68b1ca;
+        --primary-500: #429ebd;
+        --primary-600: #357e97;
+        --primary-700: #285f71;
+        --primary-800: #1b3f4b;
+        --primary-900: #0d2026;
+        --primary-950: #071013;
+
+        --secondary-50: #f8eced;
+        --secondary-100: #f2d9da;
+        --secondary-200: #e4b4b6;
+        --secondary-300: #d78e91;
+        --secondary-400: #ca686d;
+        --secondary-500: #bd4248;
+        --secondary-600: #97353a;
+        --secondary-700: #71282b;
+        --secondary-800: #4b1b1d;
+        --secondary-900: #260d0e;
+        --secondary-950: #130707;
+
+        --accent-50: #f8f7ec;
+        --accent-100: #f2eed9;
+        --accent-200: #e4deb4;
+        --accent-300: #d7cd8e;
+        --accent-400: #cabd68;
+        --accent-500: #bdac42;
+        --accent-600: #978a35;
+        --accent-700: #716728;
+        --accent-800: #4b451b;
+        --accent-900: #26220d;
+        --accent-950: #131107;
+
+    }
+
+    .dark {
+        --text-50: #051115;
+        --text-100: #0a2229;
+        --text-200: #134453;
+        --text-300: #1d667c;
+        --text-400: #2788a5;
+        --text-500: #30aacf;
+        --text-600: #5abbd8;
+        --text-700: #83cce2;
+        --text-800: #acddec;
+        --text-900: #d6eef5;
+        --text-950: #eaf6fa;
+
+        --background-50: #051114;
+        --background-100: #0a2229;
+        --background-200: #144452;
+        --background-300: #1f677a;
+        --background-400: #2989a3;
+        --background-500: #33abcc;
+        --background-600: #5cbcd6;
+        --background-700: #85cde0;
+        --background-800: #adddeb;
+        --background-900: #d6eef5;
+        --background-950: #ebf7fa;
+
+        --primary-50: #071013;
+        --primary-100: #0d2026;
+        --primary-200: #1b3f4b;
+        --primary-300: #285f71;
+        --primary-400: #357e97;
+        --primary-500: #429ebd;
+        --primary-600: #68b1ca;
+        --primary-700: #8ec5d7;
+        --primary-800: #b4d8e4;
+        --primary-900: #d9ecf2;
+        --primary-950: #ecf5f8;
+
+        --secondary-50: #130707;
+        --secondary-100: #260d0f;
+        --secondary-200: #4b1b1e;
+        --secondary-300: #71282d;
+        --secondary-400: #97353c;
+        --secondary-500: #bd424a;
+        --secondary-600: #ca686f;
+        --secondary-700: #d78e93;
+        --secondary-800: #e4b4b7;
+        --secondary-900: #f2d9db;
+        --secondary-950: #f8eced;
+
+        --accent-50: #131107;
+        --accent-100: #26220d;
+        --accent-200: #4b451b;
+        --accent-300: #716728;
+        --accent-400: #978a35;
+        --accent-500: #bdac42;
+        --accent-600: #cabd68;
+        --accent-700: #d7cd8e;
+        --accent-800: #e4deb4;
+        --accent-900: #f2eed9;
+        --accent-950: #f8f7ec;
+    }
 }
 
 
 @layer components {
+    .my-rounded {
+        @apply rounded-md;
+    }
+
+    .my_input {
+        @apply p-2 border-b-2 _bg-none focus:outline-none
+    }
+
     .bg-layer {
         @apply bg-[#ffffff6a];
+    }
+
+    .my-grid {
+        grid-template-columns: auto 1fr;
+    }
+
+    .my-align-top {
+        text-box-trim: trim-both;
+    }
+
+    ._bg-none {
+        background: none;
     }
 
     .ps-1 {

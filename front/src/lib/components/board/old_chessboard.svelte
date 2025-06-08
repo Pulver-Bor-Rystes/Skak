@@ -1,55 +1,35 @@
 <script lang="ts">
-    import { board_id, color, is_in_game, smart_init, username } from "$lib/state";
+    import { board_id, color } from "$lib/state";
     import { socket } from "$lib/ws";
-    import { get_destinations, get_move_name, get_pieces, load_fen, new_chessboard, play_move } from "chess_machine_lib";
+    import init, { get_destinations, get_move_name, get_pieces, load_fen, new_chessboard, play_move } from "chess_machine_lib";
     import { onMount } from "svelte";
 
-    let { initial_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0' } = $props();
 
-
-    let highlight_indexes: number[] = $state([]);
+    let highlight_indexes: number[] = [];
     let drag_index = -1;
     let x = 0;
     let y = 0;
 
-    let pieces: string[] = $state([]);
+    let pieces: string[] = [];
 
     onMount(async () => {
         console.log("[CHESS] init phase");
-        await smart_init();
+        await init();
         console.log("[CHESS] init phase complete!");
         
-        $board_id = new_chessboard(initial_fen);
-        pieces = get_pieces($board_id);
-        
+        let fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0';
+        $board_id = new_chessboard(fen);
 
         console.log("[CHESS] spawned chessboard with id:", $board_id);
 
         $socket.send_after("getstate", {})
     });
 
-    $socket.on("game:fen_state", ({ result, content }) => {
-        $is_in_game = result;
+    $socket.on("state", ({ result, content }) => {
         if (!result) return;
 
-        // if (content?.fen) {
-        //     // setting the color
-        //     $color = (content.white == $username);
-        //     fen_str = content.fen;
-        // }
-        // else {
-        //     fen_str = content;
-        // }
-        
+
         load_fen($board_id, content);
-        pieces = get_pieces($board_id);
-    })
-
-
-    $socket.on("game:info", ({ result, content }) => {
-        if (!result) return;
-
-        $color = (content.white == $username);
     })
 
 
@@ -91,8 +71,8 @@
 
 <!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div on:mouseover={mouse_ev} class="flex items-center justify-center h-full">
-    <div class="grid grid-cols-8 grid-rows-8 h-full">
+<div on:mouseover={mouse_ev} class="fixed inset-1 z-10 flex items-center justify-center h-full">
+    <div class="grid grid-cols-8 grid-rows-8 w-full h-full">
         {#each pieces as piece_name, i}
             <div
                 on:mousedown={ _ => de_select(i) }
@@ -114,7 +94,7 @@
                     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                     <!-- style="{ drag_index == i ? `position: absolute; top: ${y}px; left: ${x}px`:'' }" -->
                     <img 
-                        on:mousedown={() => select_piece(i)}
+                        on:mousedown={_ => select_piece(i)}
                         
                         src="/{piece_name}.png"
                         alt="pawn"

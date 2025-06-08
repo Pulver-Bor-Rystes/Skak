@@ -1,6 +1,6 @@
 use actix::Addr;
 
-use crate::server_thread::ServerThread;
+use crate::{info, server_thread::ServerThread};
 
 use super::{types::ResponseOverAfter, EngineThread};
 use std::{fmt::Display, io::{Read, Write}};
@@ -25,7 +25,7 @@ impl EngineThread {
     }
 
     fn log(&self, output: impl Display) {
-        println!("{} output: {}", self.name, output);
+        info!("{} output: {}", self.name, output);
     }
 
     pub fn enable_uci(&mut self) {
@@ -105,14 +105,14 @@ impl EngineThread {
         self.write(&format!("position fen {}", position));
         self.write(&format!("go movetime {}", max_time.as_millis()));
 
-        println!(" >> engine ({}) is searching...\nwith fen string: {}", self.name, position);
+        info!(" >> engine ({}) is searching...\nwith fen string: {}", self.name, position);
 
         let output = self.read();
         let line = output.last();
         match line {
             Some(line) => {
                 let bestmove = line.split_whitespace().nth(1).unwrap();
-                println!(" >> best move found: {}", bestmove);
+                info!(" >> best move found: {}", bestmove);
                 return bestmove.to_string();
             }
             None => {}

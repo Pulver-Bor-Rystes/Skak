@@ -1,7 +1,7 @@
-use std::{future::Future, time::Instant};
+use std::time::Instant;
 use actix::prelude::*;
-use actix_web_actors::ws::{self, WebsocketContext};
-use crate::std_format_msgs::{IncomingWsMsg, OutgoingWsMsg};
+use actix_web_actors::ws::{self};
+use crate::{info, std_format_msgs::{IncomingWsMsg, OutgoingWsMsg}};
 use super::ClientThread;
 
 
@@ -27,19 +27,25 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ClientThread {
                 let cloned_text = text.clone();
                 let parsed: Result<IncomingWsMsg, serde_json::Error> = serde_json::from_str(&text);
 
+                if text == "ping" {
+                    self.hb = Instant::now();
+                    ctx.text(OutgoingWsMsg::content("pong", "pong").serialize());
+                    return;
+                }
+
                 if let Ok(parsed) = parsed {
                     if !self.client_endpoint(text.into(), parsed, ctx) {
-                        println!("[ERR 711]: Request did not get handled\n{:?} 🤷‍♀️", cloned_text);
+                        info!("[ERR 711]: Request did not get handled\n{:?} 🤷‍♀️", cloned_text);
                         ctx.text(OutgoingWsMsg::error("request not handled", cloned_text.to_string()).serialize());
                     }
                 }
                 else {
                     let error_msg = format!("[ERR 712]: Could not parse\n{:?}", parsed);
-                    println!("{}", error_msg);
+                    info!("\nGIANT ERROR!\n{}\n{}", error_msg, cloned_text);
                     ctx.text(OutgoingWsMsg::error("parsing error", error_msg).serialize());
                 }
             }
-            ws::Message::Binary(_) => println!("Unexpected binary"),
+            ws::Message::Binary(_) => info!("Unexpected binary"),
             ws::Message::Close(reason) => {
                 ctx.close(reason);
                 ctx.stop();
@@ -51,7 +57,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ClientThread {
         }
     }
 
-    fn started(&mut self, ctx: &mut Self::Context) {}
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let _ = ctx;
+    }
 
     fn finished(&mut self, _ctx: &mut Self::Context) {}
 }

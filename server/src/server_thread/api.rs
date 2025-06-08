@@ -2,7 +2,7 @@ use std::time::Duration;
 use actix::prelude::*;
 use rand::Rng;
 use serde::Serialize;
-use crate::{client_thread::{self, ClientThread}, engine_thread::api::EngineThreadAPI, game_thread::{self, types::TimeFormat, GameThread}, std_format_msgs::OutgoingWsMsg};
+use crate::{client_thread::{self, ClientThread}, engine_thread::api::EngineThreadAPI, game_thread::{self, types::TimeFormat, GameThread}, info, std_format_msgs::OutgoingWsMsg};
 use super::{ServerThread, Username};
 
 
@@ -56,7 +56,7 @@ impl Handler<CommandsAPI> for ServerThread {
     fn handle(&mut self, msg: CommandsAPI, ctx: &mut Context<Self>) -> Self::Result {
         match msg {
             CommandsAPI::ClientLogin(username, client_thread) => {
-                let id = self.rng.gen::<usize>();
+                let id: usize = self.rng.gen::<usize>();
                 
                 // Gemmer klienten og sender dens id til thread
                 self.clients.insert(id, (username.clone(), client_thread.clone()));
@@ -115,6 +115,7 @@ impl Handler<ClientCommandsAPI> for ServerThread {
                 for (_, (client_username, client_thread)) in &self.clients {
                     if client_username != &username { continue }
                     client_thread.do_send(client_thread::api::GameAPI::YourTurn(fen_string));
+                    info!("Notifying {} of their turn in game {}", client_username, game_id);
                     return true;
                 }
 

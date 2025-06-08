@@ -2,7 +2,7 @@ import { writable, type Writable } from "svelte/store";
 import { browser } from "$app/environment";
 
 // enable to be sure that nothing goes wrong!
-const DEBUG_MSG = false;
+const DEBUG_MSG = true;
 
 
 type Message = {
@@ -22,6 +22,8 @@ class Socket {
     open: boolean = false;
     private listeners: Map<string, (payload: any) => void> = new Map();
     private queue: string[] = [];
+    private after_login_queue: string[] = [];
+    private logged_in: boolean = false;
 
     private reopen_attempts = 0;
 
@@ -30,6 +32,15 @@ class Socket {
         this.ws = null;
 
         this.new_socket();
+
+        setInterval(() => {
+            if (this.open) {
+                this.queue.push("ping");
+                this.send_queue();
+            }
+        }, 5000);
+
+        this.on("pong", _ => {});
     }
 
 
@@ -62,6 +73,11 @@ class Socket {
                 handled = true
             }
 
+
+            if (msg?.topic == "login" && msg?.payload?.result) {
+                this.logged_in = true;
+            }
+            
             
             // iterate over listeners
             this.listeners.forEach((cb, topic) => {
@@ -91,6 +107,32 @@ class Socket {
             content,
         }));
 
+        this.send_queue();
+    }
+
+    send_after(topic: string, content: any) {        
+        this.after_login_queue.push(JSON.stringify({
+            topic,
+            content,
+        }));
+
+        this.send_after_login_queue();
+    }
+
+    private send_after_login_queue(count = 0) {
+        // Forsøger igen
+        if (!this.open || !this.logged_in) {
+            setTimeout(() => this.send_after_login_queue(++count), 50);
+            return;
+        }
+
+        // pushing to normal queue
+        while (this.after_login_queue.length > 0) {
+            let new_item = this.after_login_queue.pop();
+            this.queue.push(new_item!);
+        }
+
+        // sending normal queue
         this.send_queue();
     }
 

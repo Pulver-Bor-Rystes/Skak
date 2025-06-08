@@ -1,6 +1,7 @@
-use std::time::{Duration, Instant};
-
 use crate::extra::{index_144_to_64, index_64_to_144, index_64_to_algebraic};
+use std::time::Duration;
+#[cfg(feature = "time")]
+use std::time::Instant;
 
 
 pub mod piece_data;
@@ -225,6 +226,7 @@ pub struct Clock {
     pub black: Duration,
 
     pub increment: Duration,
+    #[cfg(feature = "time")]
     pub since_last_move: Instant,
 }
 

@@ -17,3 +17,4 @@ rand = "0.8.5"
 tokio = { version = "1.32.0", features = ["full"]}
 pleco = "0.5.0"
 chess_machine_lib = { path = "../chess_machine_lib" }
+chrono = "0.4.41"

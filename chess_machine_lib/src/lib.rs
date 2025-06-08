@@ -1,21 +1,18 @@
-use chess::chess_types::{ChessBoard, ChessColor, Index144, Move, NamingConvention};
+use chess::chess_types::{ChessBoard, ChessColor, Index144, NamingConvention};
 use wasm_bindgen::prelude::*;
+use std::cell::RefCell;
 pub mod chess;
 pub mod extra;
-
-// Make this function callable from JavaScript.
-#[wasm_bindgen]
-pub fn greet(name: &str) -> String {
-    format!("Hvad så taber, {}!", name)
-}
-
-
-use std::cell::RefCell;
 
 thread_local! {
     static BOARDS: RefCell<Vec<chess::chess_types::ChessBoard>> = RefCell::new(Vec::new());
 }
 
+
+#[wasm_bindgen(start)]
+pub fn start() {
+    console_error_panic_hook::set_once();
+}
 
 
 

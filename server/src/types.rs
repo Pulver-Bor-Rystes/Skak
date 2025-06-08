@@ -41,6 +41,8 @@ pub struct Users {
 pub struct User {
     pub username: String,
     pub cookies: Vec<Cookie>,
+    // pub friends: Vec<String>,
+    pub rating: usize,
 }
 
 #[derive(Debug, PartialEq, Serialize)]

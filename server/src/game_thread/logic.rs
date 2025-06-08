@@ -1,8 +1,8 @@
 
 use actix::prelude::*;
 use chess_machine_lib::chess::chess_types::{ChessBoard, ChessColor, NamingConvention};
-use crate::server_thread::{self, ServerThread};
-use super::{types::TimeFormat, GameThread};
+use crate::{info, server_thread::{self, ServerThread}, std_format_msgs::OutgoingWsMsg};
+use super::{api::StateInfo, types::TimeFormat, GameThread};
 
 impl GameThread {
     pub fn new(id: usize, server_thread: Addr<ServerThread>, p1: &str, p2: &str, time_format: TimeFormat) -> Self {
@@ -20,30 +20,28 @@ impl GameThread {
     }
 
 
-    pub fn on_spawn(&self) {
-        self.notify_player_of_turn();
+    pub fn on_actor_spawn(&self) {
+        self.send_fen_state(None);
+
+
+        // Fortæller hvis tur det er
+        self.server_addr.do_send(server_thread::api::ToClientBrowserAPI::MessageToUsername(self.white_username.clone(), OutgoingWsMsg::content("game:info", StateInfo {
+            white: self.white_username.clone(),
+        })));
+
+        self.server_addr.do_send(server_thread::api::ToClientBrowserAPI::MessageToUsername(self.black_username.clone(), OutgoingWsMsg::content("game:info", StateInfo {
+            white: self.white_username.clone(),
+        })));
     }
 
-
-    // pub fn broadcast_state(&self) {
-    //     let p1 = self.white_username.clone();
-    //     let p2 = self.black_username.clone();
-
-    //     self.server_addr.do_send(ServerThreadAPI::ToClientBrowserAPI::MessageToUsername(p1, self.chessboard.to_fen()));
-    //     self.server_addr.do_send(ServerThreadAPI::ToClientBrowserAPI::MessageToUsername(p2, self.chessboard.to_fen()));
-    // }
-
-
-    pub fn notify_player_of_turn(&self) {
-        let username: String = match self.chessboard.turn {
-            ChessColor::White => self.white_username.clone(),
-            ChessColor::Black => self.black_username.clone(),
+    /// Sender fen_state til den spiller som har turen, med mindre man beder den sende til en specifik bruger :)
+    pub fn send_fen_state(&self, override_target: Option<String>) {
+        let target_user: String = match (self.chessboard.turn, override_target) {
+            (_, Some(override_target)) => override_target,
+            (ChessColor::White, _) => self.white_username.clone(),
+            (ChessColor::Black, _) => self.black_username.clone(),
         };
 
-
-        println!("\n -----> TURN: {}", username);
-
-
-        self.server_addr.do_send(server_thread::api::ClientCommandsAPI::NotifyYourTurn(self.id, username, self.chessboard.to_fen()));
+        self.server_addr.do_send(server_thread::api::ClientCommandsAPI::NotifyYourTurn(self.id, target_user, self.chessboard.to_fen()));
     }
 }

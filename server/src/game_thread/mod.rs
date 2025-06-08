@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use chess_machine_lib::chess::chess_types::ChessBoard;
-use crate::server_thread::{self};
+use crate::{info, server_thread::{self}};
 
 pub mod api;
 pub mod types;
@@ -23,8 +23,8 @@ impl Actor for GameThread {
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        println!(" >> [GAME] Started");
-        self.on_spawn();
+        info!(" >> [GAME] Started");
+        self.on_actor_spawn();
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {

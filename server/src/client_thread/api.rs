@@ -1,4 +1,4 @@
-use crate::std_format_msgs::OutgoingWsMsg;
+use crate::{info, std_format_msgs::OutgoingWsMsg};
 use super::ClientThread;
 use actix::prelude::*;
 use serde::Serialize;
@@ -51,7 +51,10 @@ impl Handler<GameAPI> for ClientThread {
         
         match msg { 
             SetInGame(value) => self.in_game = value,
-            YourTurn(fen) => ctx.text(OutgoingWsMsg::content("state", fen).serialize()),
+            YourTurn(fen) => {
+                info!("ClientThread: Your turn with FEN: {}", fen);
+                ctx.text(OutgoingWsMsg::content("game:fen_state", fen).serialize());
+            },
         };
 
         true

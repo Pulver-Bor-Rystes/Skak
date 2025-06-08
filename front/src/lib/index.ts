@@ -1,7 +1,7 @@
 // place files you want to import through the `$lib` alias in this folder.
 
 import init, { new_chessboard } from "chess_machine_lib";
-import { board_id, c_did_init } from "./state";
+import { board_id, c_did_init, color } from "./state";
 
 
 export async function chess_init(): Promise<boolean> {
@@ -22,17 +22,17 @@ export async function chess_init(): Promise<boolean> {
 
 export async function new_board(fen_str: string): Promise<number> {
     await chess_init();
+
     
     return new Promise(resolve => {
         board_id.subscribe(async v => {
             if (v == -1) {
                 let new_id = new_chessboard(fen_str);
                 board_id.set(new_id);
+                color.set((fen_str.includes(" w ") ? true : false));
                 resolve(new_id);
             }
             else {
-                await init();
-                
                 let id = v;
                 board_id.set(v);
                 resolve(id);

@@ -32,7 +32,6 @@ impl ServerThread {
 
     /// Fortæller alle forbundne klienter, hvilke brugere der er forbundet
     pub fn broadcast_active_players(&self) {
-        println!(" --> broadcasting active players");
         let mut names = Vec::new();
 
         for (_, (username, _)) in &self.clients {

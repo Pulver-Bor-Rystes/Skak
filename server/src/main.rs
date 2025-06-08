@@ -18,6 +18,7 @@ pub mod auth;
 pub mod types;
 pub mod validate;
 mod std_format_msgs;
+mod logging;
 
 // WebSocket handshake and start `MyWebSocket` actor.
 async fn websocket(
@@ -31,9 +32,7 @@ async fn websocket(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // clears the console
-    // print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-    println!("starting HTTP server at http://localhost:4000");
+    info!("starting HTTP server at http://localhost:4000");
 
     let server = ServerThread::new().start();
 

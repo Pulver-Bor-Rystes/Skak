@@ -1,13 +1,16 @@
 <script lang="ts">
+    import Autologon from "$lib/components/autologon.svelte";
+    import LoadData from "$lib/components/load_data.svelte";
     import "../app.css";
 </script>
 
 <slot />
 
-<!-- <Login /> -->
+<Autologon />
+<LoadData/>
 
 <style lang="postcss">
     :global(html) {
-      background-color: rgb(221, 221, 221);
+      background-color: var(--background-50);
     }
 </style>

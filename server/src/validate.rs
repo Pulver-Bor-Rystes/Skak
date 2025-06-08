@@ -31,7 +31,7 @@ pub fn signup(users: &Users, usr: &str, password: &str) -> Result<(), SignupErro
 }
 
 pub fn login(users: &Users, usr: &str, key: &str) -> Result<Cookie, LoginError> {
-    // check whether username exists
+    // check whether username exists    
     if !users.list.contains_key(usr) {
         return Err(LoginError::UsernameNotFound);
     }

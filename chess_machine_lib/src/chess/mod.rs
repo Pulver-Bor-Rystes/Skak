@@ -1,8 +1,11 @@
 pub mod chess_types;
 use core::panic;
-use std::{collections::HashMap, time::{Duration, Instant}};
-
+use std::{collections::HashMap, time::Duration};
 use chess_types::*;
+
+#[cfg(feature = "time")]
+use std::time::Instant;
+
 
 
 
@@ -46,6 +49,7 @@ impl ChessBoard {
                 white: Duration::from_secs(60 * 10),
                 black: Duration::from_secs(60 * 10),
                 increment: Duration::from_secs(0),
+                #[cfg(feature = "time")]
                 since_last_move: Instant::now(),
             },
         }
@@ -88,6 +92,7 @@ impl ChessBoard {
                 white: Duration::from_secs(60 * 10),
                 black: Duration::from_secs(60 * 10),
                 increment: Duration::from_secs(0),
+                #[cfg(feature = "time")]
                 since_last_move: Instant::now(),
             },
         };
@@ -287,15 +292,18 @@ impl ChessBoard {
                 empty_space += 1;
             }
 
-            if counter == 8 && i != 63 {
+            if counter == 8 {
                 if empty_space > 0 {
                     fen += empty_space.to_string().as_str();
                 }
 
-                fen += "/";
-                
-                counter = 0;
-                empty_space = 0;
+
+                if i != 63 {
+                    fen += "/";
+                    
+                    counter = 0;
+                    empty_space = 0;
+                }
             }
         }
 
@@ -426,7 +434,7 @@ impl ChessBoard {
     pub fn play(&mut self, chess_move: &Move) {
         if self.winner.is_some() { return }
         
-        
+        #[cfg(feature = "time")]
         match self.turn {
             ChessColor::White => {
                 let new_clock = self.clock.white.checked_sub(self.clock.since_last_move.elapsed() - self.clock.increment);
@@ -496,10 +504,13 @@ impl ChessBoard {
         }
         
         
-        
-        self.clock.since_last_move = Instant::now();
+        #[cfg(feature = "time")]
+        {
+            self.clock.since_last_move = Instant::now();
+        }
     }
 
+    
     fn calc_valid_moves(&mut self, only_first_two_steps: bool) {
         self.moves.clear();
         
@@ -590,12 +601,6 @@ impl ChessBoard {
         
 
         self.generate_name_for_each_move();
-
-        // println!("calculated {} actual moves", self.moves.len());
-
-        for mv in &self.moves {
-            // println!(" -> {}", mv.name);
-        }
     }
 
 
@@ -891,7 +896,7 @@ impl ChessBoard {
         let moves_clone = self.moves.clone();
 
 
-        for (name, list) in names {
+        for (_name, list) in names {
             if list.len() > 1 {
                 // println!("\nmultiple moves for move name: {}", name);
 

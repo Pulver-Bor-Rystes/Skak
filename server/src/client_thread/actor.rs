@@ -13,6 +13,8 @@ impl Actor for ClientThread {
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        self.server_addr.do_send(server_thread::api::CommandsAPI::RemoveClient(self.id.unwrap()));
+        if let Some(id) = self.id {
+            self.server_addr.do_send(server_thread::api::CommandsAPI::RemoveClient(id));
+        }
     }
 }

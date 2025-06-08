@@ -1,8 +1,11 @@
+use crate::info;
 use crate::std_format_msgs::content_templates;
 
 use super::types::*;
 use super::validate;
 
+
+/// Hvis signup gik godt, får brugeren en cookie til at logge ind med fremadrettet
 pub fn signup(payload: content_templates::Login) -> Result<String, SignupError> {
     let mut users = load();
     let content_templates::Login { username, password } = payload;
@@ -16,6 +19,7 @@ pub fn signup(payload: content_templates::Login) -> Result<String, SignupError> 
     let user = User {
         username: username.to_string(),
         cookies: vec![Cookie::password(&password), cookie],
+        rating: 1200,
     };
 
     // add user to list
@@ -54,7 +58,7 @@ pub fn reset() {
     save(users);
 }
 
-fn load() -> Users {
+pub fn load() -> Users {
     let user_content = std::fs::read(USERS_PATH);
 
     match user_content {
@@ -64,10 +68,8 @@ fn load() -> Users {
             if users.is_ok() {
                 return users.unwrap();
             } else {
-                return Users::default();
+                panic!("Could not load users.json\n{:?}", users.err());
             }
-
-            // Copy every element from users to self
         }
         Err(_) => {
             let res = std::fs::write(
@@ -76,7 +78,7 @@ fn load() -> Users {
             );
             match res {
                 Ok(_) => {
-                    println!("File created");
+                    info!("File created");
                     return load();
                 }
                 Err(_e) => {
@@ -87,7 +89,7 @@ fn load() -> Users {
     }
 }
 
-fn save(users: Users) {
+pub fn save(users: Users) {
     std::fs::write(USERS_PATH, serde_json::to_string_pretty(&users).unwrap())
         .expect("Failed to save database");
 }

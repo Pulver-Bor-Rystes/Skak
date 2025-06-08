@@ -1,3 +1,5 @@
+use crate::info;
+
 use super::*;
 
 
@@ -5,7 +7,7 @@ impl Actor for ServerThread {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Context<Self>) {
-        println!("Ready to handle ws sessions!");
+        info!("Ready to handle ws sessions!");
 
         self.engines.insert(
             "juules".to_string(),
@@ -19,6 +21,6 @@ impl Actor for ServerThread {
     }
 
     fn stopped(&mut self, _ctx: &mut Context<Self>) {
-        println!("Server stopped");
+        info!("Server stopped");
     }
 }
