@@ -61,7 +61,7 @@
     <h3 class="mb-5">Søg efter spillere</h3>
 
     <!-- svelte-ignore event_directive_deprecated -->
-    <input on:click={update} on:keydown={update} bind:value={search_str} class="my_input w-full pl-1" placeholder="Indtast søgeord" type="text">
+    <input on:click={update} on:keyup={update} bind:value={search_str} class="my_input w-full pl-1" placeholder="Indtast søgeord" type="text">
     
 
     <div class="h-40 overflow-auto">
