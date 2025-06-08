@@ -1,0 +1,10 @@
+[package]
+name = "bevy_skak"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = "0.16.0"
+bevy-inspector-egui = "0.31.0"
+rand = "0.9.1"
+chess_machine_lib = { path = "../chess_machine_lib", features = ["time"] }

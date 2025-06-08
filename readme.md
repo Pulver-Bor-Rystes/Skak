@@ -1,42 +1,31 @@
-Skakk
-============================
+# Skak
+
+
+## Mappe guide
+
+
+### ./engine
+Her har vi Benjamins C++ skak engine, som kan bruges til udregne det "bedste" træk
 
 
 
-### Påkrævet
- - NodeJS
- - NGINX *(bruges som reverse proxy)*
- - Mongodb
+### ./rengine
+Næsten det samme, men lavet i rust og nok en del dårligere
 
 
+### ./server
+Serveren, skrevet i rust, binder det hele sammen. Det er det vi forbinder til og al kommunikation foregår igennem serveren.
 
-### Mappe struktur
 
-En oversigt over hvor alt det spændende sker :))
+### ./stockfish
+Stockfish bruges til at udregne det bedste træk
 
-    .
-    ├── server
-    │   ├── models
-    │   │   └── user.model.ts
-    │   ├── routes
-    │   │   ├── legacy
-    │   │   │   └── example.router.ts
-    │   │   └── v1
-    │   │       ├── auth.router.ts
-    │   │       ├── testing.router.ts
-    │   │       ├── user_info.router.ts
-    │   │       └── users.router.ts
-    │   ├── main.ts - alt socket.io halløj sker pt. her
-    ├── shared - Idéelt skal alt kode, som skal bruges af både server og klient placeres her.
-    │   ├── functions
-    │   ├── functions.ts
-    │   └── types.ts
-    ├── website
-    │   ├── src
-    │   │   ├── components
-    │   │   ├── routes
-    │   │   ├── stores
-    │   │   └── app.html
-    │   ├── static
-    │   │   └── favicon.png
+
+### ./web
+Den rigtige hjemmeside!
+
+
+### ./web_a
+
+
 
