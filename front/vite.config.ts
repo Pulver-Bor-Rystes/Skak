@@ -12,5 +12,8 @@ export default defineConfig({
 		fs: {
 			allow: ['..'], // allow serving files from parent dirs
 		}
+	},
+	preview: {
+		port: 3000,
 	}
 });
