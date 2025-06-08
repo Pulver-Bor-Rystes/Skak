@@ -1,31 +1,97 @@
 # Skak
+Projektet er skrevet I så meget Rust som overhovedet muligt 🤞
+
+Fuck JS haha
+
+## Vigtigt
+- wasm-pack skal installeres `cargo install wasm-pack`
+- nginx kræves for at få det til at spille sammen *(se nginx afsnittet)*
 
 
-## Mappe guide
+## Projekt oversigt
 
 
-### ./engine
-Her har vi Benjamins C++ skak engine, som kan bruges til udregne det "bedste" træk
+```
+Skak projekt
+│   README.md
+│
+└─── engine
+│      Benjamins første skak engine
+│      Bruges af server, så spillere kan spille i mod den.
+│      💿 make optimized
+│
+└─── chess_machine_lib
+│      Et program skrevet i Rust, som holder styr på skakspillet.
+│      Hvis den bliver kompileret med featuren 'time', kan den også holde styr på tiden.
+│      Bliver brugt af: bevy_skak, server og front
+│      💿 wasm-pack build --target web
+│      ‼️ Må IKKE kompileres med featuren time, hvis det skal fungere i webbrowseren
+│   
+└─── server
+│      Serveren eller backenden, som binder det hele sammen.
+│      Skrevet i Rust med multithreading-hjælp fra frameworket Actix.
+│      Kører på port: 4000
+│      💿 cargo run
+│      ‼️ Kan IKKE køre uden at chess_machine_lib, stockfish og engine er kompileret.
+│   
+└─── front
+│      Selve hjemmesiden - skrevet i Svelte og TailwindCSS
+│      Kører på port 3000
+│      💿 npm run dev
+│      
+└─── stockfish
+│      Kræves af server, så spillere kan spille i mod den.
+│      💿 cd src && make -j build eller make -j profile-build (hvis man selv kompilerer koden)
+│      ‼️ Er faktisk ikke med i github repo, så man skal selv hente det fra https://stockfishchess.org
+│      
+└─── bevy_skak
+│      Et projekt skrevet i Rust og Bevy.
+│      Pt. gør det ikke rigtig noget ud over at vise et skakbræt, hvor man kan rykke rundt på brikkerne.
+│      Tasten 'X' vender brættet
+│      💿 cargo run
+
+```
 
 
+## NGINX Konfiguration
+Erstat din NGINX conf fil med dette:
 
-### ./rengine
-Næsten det samme, men lavet i rust og nok en del dårligere
+```config
+worker_processes 1;
 
+events {
+        worker_connections 1024;
+}
 
-### ./server
-Serveren, skrevet i rust, binder det hele sammen. Det er det vi forbinder til og al kommunikation foregår igennem serveren.
+http {
+        server {
+                listen 80;
+                server_name localhost;
 
+                location /api {
+                        proxy_pass http://localhost:4000;
+                }
 
-### ./stockfish
-Stockfish bruges til at udregne det bedste træk
+                location /api/ws {
+                        proxy_set_header X-Real-IP $remote_addr;
+                        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                        proxy_set_header Host $http_host;
+                        proxy_set_header X-NginX-Proxy false;
 
+                        proxy_pass http://localhost:4000;
+                        proxy_redirect off;
 
-### ./web
-Den rigtige hjemmeside!
+                        proxy_http_version 1.1;
+                        proxy_set_header Upgrade $http_upgrade;
+                        proxy_set_header Connection "upgrade";
+                }
 
-
-### ./web_a
-
-
-
+                location / {
+                        proxy_pass http://localhost:3000;
+                        proxy_http_version 1.1;
+                        proxy_set_header Upgrade $http_upgrade;
+                        proxy_set_header Connection "upgrade";
+                }
+        }
+}
+```
