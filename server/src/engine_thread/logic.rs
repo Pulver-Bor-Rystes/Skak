@@ -1,6 +1,6 @@
 use actix::Addr;
 
-use crate::{info, server_thread::ServerThread};
+use crate::{error, info, server_thread::ServerThread};
 
 use super::{types::ResponseOverAfter, EngineThread};
 use std::{fmt::Display, io::{Read, Write}};
@@ -8,20 +8,29 @@ use std::{fmt::Display, io::{Read, Write}};
 
 
 impl EngineThread {
-    pub fn new(exe: &str, server_addr: Addr<ServerThread>) -> EngineThread {
+    pub fn new(exe: &str, server_addr: Addr<ServerThread>) -> Option<EngineThread> {
         let handle = std::process::Command::new(exe)
             .current_dir("../")
             .stdout(std::process::Stdio::piped())
             .stdin(std::process::Stdio::piped())
-            .spawn()
-            .expect("fail");
+            .spawn();
+            // .expect("fail");
 
-        EngineThread {
-            server_addr,
-            name: exe.to_string(),
-            handle,
-            response_over: ResponseOverAfter::Newlines(1),
+        match handle {
+            Ok(handle) => {
+                EngineThread {
+                    server_addr,
+                    name: exe.to_string(),
+                    handle,
+                    response_over: ResponseOverAfter::Newlines(1),
+                }.into()
+            }
+            Err(err) => {
+                error!("Kunne ikke starte '{exe}'\nFejl: {err:?}");
+                None
+            }
         }
+
     }
 
     fn log(&self, output: impl Display) {

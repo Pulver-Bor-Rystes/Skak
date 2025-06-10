@@ -8,16 +8,20 @@ impl Actor for ServerThread {
 
     fn started(&mut self, ctx: &mut Context<Self>) {
         info!("Ready to handle ws sessions!");
+        
+        match EngineThread::new("engine/ChesslusPlus", ctx.address()) {
+            Some(actor) => {
+                self.engines.insert("juules".into(), actor.start());
+            },
+            None => {},
+        };
 
-        self.engines.insert(
-            "juules".to_string(),
-            EngineThread::new("engine/ChessPlusPlus", ctx.address()).start(),
-        );
-
-        self.engines.insert(
-            "stockfish".to_string(),
-            EngineThread::new("stockfish/stockfish", ctx.address()).start(),
-        );
+        match EngineThread::new("stockfish/stockfish", ctx.address()) {
+            Some(actor) => {
+                self.engines.insert("stockfish".into(), actor.start());
+            },
+            None => {},
+        };
     }
 
     fn stopped(&mut self, _ctx: &mut Context<Self>) {
