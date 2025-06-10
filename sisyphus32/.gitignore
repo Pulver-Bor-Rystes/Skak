@@ -1,0 +1,14 @@
+/target
+.vscode
+TODO*
+!todo.rs
+TO-DO*
+.VSCodeCounter
+*.gz
+openings/*
+!openings/openings.pgn
+pgn_results/*
+!pgn_results/.gitkeep
+src/bin/debug.rs
+tables/syzygy/*
+!tables/syzygy/.gitkeep

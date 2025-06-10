@@ -510,7 +510,6 @@ impl ChessBoard {
         }
     }
 
-    
     fn calc_valid_moves(&mut self, only_first_two_steps: bool) {
         self.moves.clear();
         
