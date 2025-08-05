@@ -25,6 +25,3 @@ pub struct ServerThread {
     rng: ThreadRng,
     ids: Vec<usize>,
 }
-
-
-

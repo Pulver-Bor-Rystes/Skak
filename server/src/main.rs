@@ -8,6 +8,8 @@ use client_thread::ClientThread;
 use server_thread::ServerThread;
 use web::Data;
 
+use crate::game_thread::types::TimeFormat;
+
 
 mod server_thread;
 mod client_thread;
@@ -30,16 +32,19 @@ async fn websocket(
     ws::start(ClientThread::new(server_ref), &req, stream)
 }
 
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     info!("starting HTTP server at http://localhost:4000");
+
+    TimeFormat::from(";M7;S3;s1;");
 
     let server = ServerThread::new().start();
 
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(server.clone()))
-            .service(web::resource("/api/ws").route(web::get().to(websocket))) // Add the WebSocket route
+            .service(web::resource("/api/ws").route(web::get().to(websocket)))
             .wrap(middleware::Logger::default())
     })
     .workers(2)

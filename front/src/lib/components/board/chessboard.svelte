@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { board_id, color, is_in_game, smart_init, username } from "$lib/state";
+    import { board_id, board_orientation, color, is_in_game, smart_init, username } from "$lib/state";
     import { socket } from "$lib/ws";
     import { get_destinations, get_move_name, get_pieces, load_fen, new_chessboard, play_move } from "chess_machine_lib";
     import { onMount } from "svelte";
@@ -14,13 +14,32 @@
 
     let pieces: string[] = $state([]);
 
+
+    function update_board() {
+        let new_pieces = get_pieces($board_id);
+
+        if ($board_orientation) {
+            pieces = new_pieces
+            return;
+        }
+
+        // sort, så det skal først lige vendes
+        let new_arr = [];
+        for (const p of pieces)
+            new_arr.unshift(p);
+
+        pieces = new_arr;
+    }
+
+    
+
     onMount(async () => {
         console.log("[CHESS] init phase");
         await smart_init();
         console.log("[CHESS] init phase complete!");
         
         $board_id = new_chessboard(initial_fen);
-        pieces = get_pieces($board_id);
+        update_board();
         
 
         console.log("[CHESS] spawned chessboard with id:", $board_id);
@@ -31,32 +50,33 @@
     $socket.on("game:fen_state", ({ result, content }) => {
         $is_in_game = result;
         if (!result) return;
-
-        // if (content?.fen) {
-        //     // setting the color
-        //     $color = (content.white == $username);
-        //     fen_str = content.fen;
-        // }
-        // else {
-        //     fen_str = content;
-        // }
         
         load_fen($board_id, content);
-        pieces = get_pieces($board_id);
+        update_board();
     })
 
 
     $socket.on("game:info", ({ result, content }) => {
         if (!result) return;
 
-        $color = (content.white == $username);
+        $board_orientation = (content.white == $username);
     })
 
 
     function select_piece(index: number) {
+        console.log($board_orientation);
         highlight_indexes = [];
         drag_index = index;
-        get_destinations($board_id, $color, index).forEach(v => highlight_indexes.push(v));
+        
+        let corrected_index = 63-index;
+        console.log(index, corrected_index)
+        get_destinations($board_id, $color, corrected_index).forEach(v => {
+            if (!$board_orientation) {
+                v = 63-v;
+            }
+            
+            highlight_indexes.push(v);
+        });
     }
 
     function move_piece_to(index: number) {
@@ -91,6 +111,7 @@
 
 <!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore event_directive_deprecated -->
 <div on:mouseover={mouse_ev} class="flex items-center justify-center h-full">
     <div class="grid grid-cols-8 grid-rows-8 h-full">
         {#each pieces as piece_name, i}

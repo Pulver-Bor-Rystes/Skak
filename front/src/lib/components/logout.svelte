@@ -1,3 +1,3 @@
-<p class="hover:underline hover:cursor-pointer justify-self-end">
+<p class="menu-btn danger-bg-hover">
     Log ud
 </p>

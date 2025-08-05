@@ -11,6 +11,6 @@
 
 <style lang="postcss">
     :global(html) {
-      background-color: var(--background-50);
+      background-color: #fff;
     }
 </style>

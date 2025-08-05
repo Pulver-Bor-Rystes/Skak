@@ -1,50 +1,35 @@
 <script lang="ts">
-    import LoadingEffect from "$lib/components/loading_effect.svelte";
-    import ProfilePicture from "./profile_picture.svelte";
-    import LoadData from "../../lib/components/load_data.svelte";
-    import SimpleSearchWidget from "./widgets/simple_search.svelte";
-    import { rating, username } from "$lib/state";
-    import Logout from "$lib/components/logout.svelte";
-    import BoardWidget from "./widgets/board.svelte";
-    import Chessboard from "$lib/components/board/chessboard.svelte";
+    import { friends_menu, new_game_menu, rating, username } from "$lib/state";
+    import Header from "./menu/header.svelte";
+    import NewGame from "./widgets/new_game.svelte";
+    import Friends from "./widgets/friends.svelte";
+    import PendingInvite from "./widgets/pending_invite.svelte";
+
 
 </script>
 
+
+
 <div class="grid m-5">
-    <!-- Header thingy -->
-    <div class="grid my-grid ">
-        <ProfilePicture/>
-        <div class="grid m-5">
-            <h2 class="my-align-top"> {$username} </h2>
+    <Header/>
 
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="flex">
-                    <p class="hover:underline hover:cursor-pointer">
-                        Rating:
-                        {#if rating}
-                            { $rating }
-                        {:else}
-                            <LoadingEffect character="-" max={4} start="----"/>
-                        {/if}
-                    </p>
-    
-                    <div class="ml-2 mr-2">|</div>
-                    
-                    <p class="hover:underline hover:cursor-pointer">
-                        Venner
-                    </p>
-                </div>
+    <!-- <div class="border border-[#E4E4E4] mt-5"></div> -->
 
-
-                <Logout/>
+    <div class="mt-5 flex flex-col gap-5">
+        {#if $new_game_menu}
+            <NewGame/>
+        {:else if $friends_menu}
+            <Friends/>
+        {:else}
+            <div>
+                <h1>Hej {$username} 👋</h1>
+                <p>Først og fremmest, tak for at give min skakside et forsøg!</p>
+                <p>Her på siden kan du spille skak, næsten lige så godt som chess.com! ...bare meget værre 😅</p>
+                <p>For at komme i gang, skal du blotte trykke på "Nyt Spil" oppe i menuen</p>
             </div>
-        </div>
+        {/if}
     </div>
 
-    <div class="grid grid-cols-2">
-        <SimpleSearchWidget/>
-        <BoardWidget/>
 
-        <!-- <Chessboard initial_fen="r2q2k1/pb3p1p/1pp5/2b3p1/3p4/1B4QP/PPP2PP1/3R1RK1 w - - 0 19"/> -->
-    </div>
+    <PendingInvite/>
 </div>

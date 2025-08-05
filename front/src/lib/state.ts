@@ -11,11 +11,40 @@ export const cookie = writable('');
 export const c_did_init = writable(false);
 export const board_id = writable(-1);
 export const color = writable(false);
+export const board_orientation = writable(true);
 export const is_in_game = writable(false);
 
 export const active_players = writable([]);
 export const engines = writable([]);
 export const rating = writable(undefined);
+
+
+
+// home page state
+export const new_game_menu = writable(false);
+export const friends_menu = writable(false);
+export const pending_invite = writable(false);
+
+
+
+new_game_menu.subscribe(value => {
+    if (!browser || !value) return;
+
+    // hvis en invitation er pending, så luk new_game_menu
+    pending_invite.subscribe(p => {
+        if (p) {
+            new_game_menu.set(false);
+        }
+        else {
+            friends_menu.set(false);
+        }
+    });
+});
+
+friends_menu.subscribe(value => {
+    if (!browser || !value) return;
+    new_game_menu.set(false);
+});
 
 username.subscribe(u => {
     if (!browser) return;

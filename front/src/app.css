@@ -3,6 +3,8 @@
 @import 'tailwindcss/utilities';
 
 
+
+
 @layer base {
     h1 {
         @apply text-4xl;
@@ -169,6 +171,18 @@
         grid-template-columns: auto 1fr;
     }
 
+
+    .def-rounded {
+        @apply rounded-xl;
+    }
+
+
+    .grid-profile {
+        display: grid;;
+        grid-template-columns: auto 1fr;
+    }
+    
+    
     .my-align-top {
         text-box-trim: trim-both;
     }
@@ -196,4 +210,52 @@
     .ps-5 {
         @apply pl-5 pr-5;
     }
+
+    .menu-btn {
+        @apply def-border def-border-hover w-32 text-center;
+        @apply hover:bg-[#F0F0F0] hover:cursor-pointer;
+        /* change color on click */
+        @apply active:bg-[#D0D0D0];
+        /* disable text select */
+        @apply no-text-select;
+    }
+
+
+    .no-text-select {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .danger {
+        @apply text-secondary-500 hover:text-secondary-600;
+        @apply hover:cursor-pointer;
+    }
+
+    .danger-bg-hover {
+        @apply hover:bg-secondary-100;
+    }
+
+
+    .def-border {
+        @apply border border-[#E4E4E4] def-rounded p-2;
+    }
+
+    .def-border-active {
+        @apply border border-[#9B9B9B] def-rounded p-2;
+    }
+
+    .def-border-hover {
+        @apply hover:border-[#9B9B9B] transition-colors;
+    }
+
+
+    @property --border-angle {
+        inherits: false;
+        initial-value: 0deg;
+        syntax: '<angle>';
+    }
+
+
 }

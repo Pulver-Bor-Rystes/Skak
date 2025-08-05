@@ -57,7 +57,7 @@
 
 
 <!-- Søgefunktion -->
-<div class="grid my-rounded bg-text-100 p-3 mr-1">
+<div class="grid def-rounded bg-text-100 p-3 mr-1">
     <h3 class="mb-5">Søg efter spillere</h3>
 
     <!-- svelte-ignore event_directive_deprecated -->

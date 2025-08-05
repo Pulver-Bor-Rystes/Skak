@@ -4,7 +4,16 @@ export default {
   content: ['./src/**/*.{html,js,svelte,ts}'],
 
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+          'border': 'border 4s linear infinite',
+      },
+      keyframes: {
+          'border': {
+              to: { '--border-angle': '360deg' },
+          }
+      }                      
+    },
     fontSize: {
       sm: '0.750rem',
       base: '1rem',
