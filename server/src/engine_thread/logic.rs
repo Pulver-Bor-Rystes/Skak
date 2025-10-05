@@ -3,34 +3,31 @@ use actix::Addr;
 use crate::{error, info, server_thread::ServerThread};
 
 use super::{types::ResponseOverAfter, EngineThread};
-use std::{fmt::Display, io::{Read, Write}};
-
-
+use std::{
+    fmt::Display,
+    io::{Read, Write},
+};
 
 impl EngineThread {
     pub fn new(exe: &str, server_addr: Addr<ServerThread>) -> Option<EngineThread> {
         let handle = std::process::Command::new(exe)
-            .current_dir("../")
             .stdout(std::process::Stdio::piped())
             .stdin(std::process::Stdio::piped())
             .spawn();
-            // .expect("fail");
 
         match handle {
-            Ok(handle) => {
-                EngineThread {
-                    server_addr,
-                    name: exe.to_string(),
-                    handle,
-                    response_over: ResponseOverAfter::Newlines(1),
-                }.into()
+            Ok(handle) => EngineThread {
+                server_addr,
+                name: exe.to_string(),
+                handle,
+                response_over: ResponseOverAfter::Newlines(1),
             }
+            .into(),
             Err(err) => {
                 error!("Kunne ikke starte '{exe}'\nFejl: {err:?}");
                 None
             }
         }
-
     }
 
     fn log(&self, output: impl Display) {
@@ -114,7 +111,10 @@ impl EngineThread {
         self.write(&format!("position fen {}", position));
         self.write(&format!("go movetime {}", max_time.as_millis()));
 
-        info!(" >> engine ({}) is searching...\nwith fen string: {}", self.name, position);
+        info!(
+            " >> engine ({}) is searching...\nwith fen string: {}",
+            self.name, position
+        );
 
         let output = self.read();
         let line = output.last();

@@ -48,7 +48,36 @@ pub enum GameCommandsAPI {
     PlayMove(Username, String),
 }
 
+#[derive(Message)]
+#[rtype(result="bool")]
+pub enum AuthAPI {
+    /// username, password
+    Signup(String, String),
+}
 
+
+impl Handler<AuthAPI> for ServerThread {
+    type Result = bool;
+
+    fn handle(&mut self, msg: AuthAPI, ctx: &mut Self::Context) -> Self::Result {
+        match msg {
+            AuthAPI::Signup(username, password) => {
+                info!("signing up: {username} - {password}");
+
+                let _ = sqlx::query("INSERT INTO User (username) VALUES (?)")
+                    .bind(username.clone())
+                    .execute(&self.sql_conn);
+
+                let _ = sqlx::query("INSERT INTO Password (hash, owner) VALUES (?, ?)")
+                    .bind(password)
+                    .bind(username)
+                    .execute(&self.sql_conn);
+            }
+        }
+
+        true
+    }
+}
 
 impl Handler<CommandsAPI> for ServerThread {
     type Result = bool;

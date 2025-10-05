@@ -1,7 +1,7 @@
 use std::time::Instant;
 use actix::Addr;
 use actix_web_actors::ws::WebsocketContext;
-use crate::{auth::{self, load}, error, game_thread::types::TimeFormat, info, server_thread::{self, ServerThread}, std_format_msgs::{content_templates, IncomingWsMsg, OutgoingWsMsg}};
+use crate::{auth::{self, load}, error, game_thread::types::TimeFormat, info, server_thread::{self, api, ServerThread}, std_format_msgs::{content_templates, IncomingWsMsg, OutgoingWsMsg}};
 use super::ClientThread;
 
 #[derive(Debug)]
@@ -119,14 +119,16 @@ impl ClientThread {
     fn signup(&mut self, original_text: &str, _payload: &IncomingWsMsg, ctx: &mut WebsocketContext<ClientThread>) -> Result<(), serde_json::Error> {
         let msg: IncomingWsMsg<content_templates::Login> = serde_json::from_str(original_text)?;
 
-        match auth::signup(msg.content) {
-            Ok(cookie) => {
-                ctx.text(OutgoingWsMsg::content("signup", cookie).serialize());
-            }
-            Err(err) => {
-                ctx.text(OutgoingWsMsg::error("signup", err).serialize());
-            }
-        }
+        // self.server_addr.do_send(api::);
+        
+        // match auth::signup(msg.content) {
+        //     Ok(cookie) => {
+        //         ctx.text(OutgoingWsMsg::content("signup", cookie).serialize());
+        //     }
+        //     Err(err) => {
+        //         ctx.text(OutgoingWsMsg::error("signup", err).serialize());
+        //     }
+        // }
 
         Ok(())
     }

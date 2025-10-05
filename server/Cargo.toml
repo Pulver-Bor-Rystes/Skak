@@ -16,3 +16,5 @@ random-string = "1.0.0"
 rand = "0.8.5"
 chess_machine_lib = { path = "../chess_machine_lib" }
 chrono = "0.4.41"
+sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-native-tls", "mysql", "chrono", "macros", "migrate", "derive" ] }
+envy = "0.4.2"
