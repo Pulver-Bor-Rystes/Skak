@@ -3,21 +3,31 @@ use std::time::Duration;
 #[cfg(feature = "time")]
 use std::time::Instant;
 
-
 pub mod piece_data;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Index144(i32);
 
-pub enum BoardType { Regular, Large }
+pub enum BoardType {
+    Regular,
+    Large,
+}
 
-#[derive(Clone)]
-pub enum NamingConvention { Standard, LongAlgebraicNotation }
+#[derive(Clone, Debug)]
+pub enum NamingConvention {
+    Standard,
+    LongAlgebraicNotation,
+}
 
-
-const INVALID_INDEXES: [i32; 80] = [9, 83, 84, 135, 141, 120, 138, 24, 48, 85, 123, 139, 7, 121, 6, 136, 25, 35, 142, 106, 128, 22, 70, 124, 34, 4, 5, 23, 71, 20, 127, 2, 37, 109, 129, 122, 143, 3, 107, 36, 140, 73, 0, 21, 125, 14, 18, 132, 72, 133, 96, 108, 19, 130, 12, 16, 1, 95, 15, 126, 59, 131, 97, 119, 58, 17, 10, 61, 118, 46, 94, 13, 137, 47, 82, 8, 60, 134, 49, 11 ];
-const LAST_ROWS: [i32; 16] = [26, 27, 28, 29, 30, 31, 32, 33, 110, 111, 112, 113, 114, 115, 116, 117];
-
+const INVALID_INDEXES: [i32; 80] = [
+    9, 83, 84, 135, 141, 120, 138, 24, 48, 85, 123, 139, 7, 121, 6, 136, 25, 35, 142, 106, 128, 22,
+    70, 124, 34, 4, 5, 23, 71, 20, 127, 2, 37, 109, 129, 122, 143, 3, 107, 36, 140, 73, 0, 21, 125,
+    14, 18, 132, 72, 133, 96, 108, 19, 130, 12, 16, 1, 95, 15, 126, 59, 131, 97, 119, 58, 17, 10,
+    61, 118, 46, 94, 13, 137, 47, 82, 8, 60, 134, 49, 11,
+];
+const LAST_ROWS: [i32; 16] = [
+    26, 27, 28, 29, 30, 31, 32, 33, 110, 111, 112, 113, 114, 115, 116, 117,
+];
 
 impl Index144 {
     // Default
@@ -36,7 +46,6 @@ impl Index144 {
     pub fn from8(v: i32) -> Self {
         Self(index_64_to_144(v))
     }
-
 
     pub fn new() -> Self {
         Self(0)
@@ -69,7 +78,7 @@ impl Index144 {
         }
 
         let file_index = (file - b'a') as i32;
-        let rank_index = 7-(rank - b'1') as i32;
+        let rank_index = 7 - (rank - b'1') as i32;
 
         let index_64 = rank_index * 8 + file_index;
 
@@ -77,7 +86,7 @@ impl Index144 {
     }
 
     // Setters
-    
+
     pub fn set_12(&mut self, v: i32) -> &mut Self {
         self.0 = v;
         self
@@ -100,7 +109,6 @@ impl Index144 {
         self
     }
 
-
     pub fn inc(&mut self, board_type: BoardType) -> &mut Self {
         match board_type {
             BoardType::Regular => {
@@ -109,8 +117,11 @@ impl Index144 {
                     self.0 += 1;
                 }
                 self
-            },
-            BoardType::Large => { self.0 += 1; self },
+            }
+            BoardType::Large => {
+                self.0 += 1;
+                self
+            }
         }
     }
 
@@ -122,15 +133,16 @@ impl Index144 {
                     self.0 -= 1;
                 }
                 self
-            },
-            BoardType::Large => { self.0 -= 1; self },
+            }
+            BoardType::Large => {
+                self.0 -= 1;
+                self
+            }
         }
     }
 
-
     // Getters
 
-    
     fn file_and_rank(&self) -> (String, String) {
         let from = self.to_str();
         let first = &from[0..1];
@@ -157,8 +169,7 @@ impl Index144 {
     pub fn to_str(&self) -> String {
         if self.is_valid() {
             index_64_to_algebraic(*self)
-        }
-        else {
+        } else {
             format!("X0({})", self.0)
         }
     }
@@ -180,16 +191,14 @@ impl Index144 {
     }
 }
 
-
 impl From<i32> for Index144 {
     fn from(v: i32) -> Self {
         Self(v)
     }
 }
 
-
 // Resources
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ChessBoard {
     pub pieces: [Option<Piece>; 144],
     pub en_passant: Option<EnPassant>,
@@ -197,10 +206,10 @@ pub struct ChessBoard {
 
     pub moves: Vec<Move>,
     pub move_history: Vec<Move>,
-    
+
     pub halfmove_clock: i32,
     pub fullmove_number: i32,
-    
+
     // CHANGE DETECTION
     pub board_changed: bool,
     pub turn_changed: bool,
@@ -217,10 +226,13 @@ pub struct ChessBoard {
 }
 
 #[derive(Clone, Debug)]
-pub enum Winner { White, Black, Tie }
+pub enum Winner {
+    White,
+    Black,
+    Tie,
+}
 
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Clock {
     pub white: Duration,
     pub black: Duration,
@@ -230,14 +242,11 @@ pub struct Clock {
     pub since_last_move: Instant,
 }
 
-
 #[derive(Debug, Clone, Copy)]
 pub struct EnPassant {
     pub to_attack: Index144,
     pub to_remove: Index144,
 }
-
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Move {
@@ -248,8 +257,6 @@ pub struct Move {
     pub check_mate: bool,
     pub name: String,
 }
-
-
 
 impl Move {
     pub fn from(&self) -> Index144 {
@@ -307,7 +314,13 @@ impl Move {
         };
 
         // from .. capture? .. to .. promotion
-        self.name = format!("{}{}{}{}", self.from().to_str(), capture_flag, self.to().to_str(), promotion_flag);
+        self.name = format!(
+            "{}{}{}{}",
+            self.from().to_str(),
+            capture_flag,
+            self.to().to_str(),
+            promotion_flag
+        );
     }
 
     fn make_name_standard(&mut self, chessboard: &ChessBoard, show_file: bool, show_rank: bool) {
@@ -315,7 +328,7 @@ impl Move {
         // 1. PieceType
         let piece = chessboard.get(self.from()).unwrap();
         let piece_name = piece.kind.to_str_move_name_format();
-        
+
         // 2. Identifier flag in case of multiple.
         let mut from_flag = match (show_file, show_rank) {
             (true, true) => self.from().to_str(),
@@ -323,7 +336,7 @@ impl Move {
             (false, true) => self.rank(),
             (false, false) => "".to_string(),
         };
-        
+
         // 2. Capture flag
         let mut capture_flag = match chessboard.get(self.to()).is_some() {
             true => "x",
@@ -331,20 +344,23 @@ impl Move {
         };
 
         match chessboard.en_passant {
-            Some(EnPassant { to_attack, to_remove: _ }) => {
+            Some(EnPassant {
+                to_attack,
+                to_remove: _,
+            }) => {
                 if self.to() == to_attack {
                     capture_flag = "x";
                     if &from_flag == "" {
                         from_flag = self.file();
                     }
                 }
-            },
-            None => {},
+            }
+            None => {}
         }
-        
+
         // 3. Destination
         let destination_flag = self.to().to_str();
-        
+
         // 4. Promotion
         let promotion_flag = match self.promote {
             Some(promotion) => match promotion {
@@ -355,7 +371,7 @@ impl Move {
             },
             None => "",
         };
-        
+
         // 5. Check og checkmate flag
         let check_flag = match (self.check, self.check_mate) {
             (_, true) => "#",
@@ -363,10 +379,9 @@ impl Move {
             _ => "",
         };
 
-
         // hvad hvis det er casling?
 
-        if piece.kind == PieceType::King {           
+        if piece.kind == PieceType::King {
             // black king side
             if self.to() == 32.into() {
                 self.name = "o-o".to_string();
@@ -392,13 +407,12 @@ impl Move {
             }
         }
 
-        self.name = format!("{}{}{}{}{}{}", piece_name, from_flag, capture_flag, destination_flag, promotion_flag, check_flag);
+        self.name = format!(
+            "{}{}{}{}{}{}",
+            piece_name, from_flag, capture_flag, destination_flag, promotion_flag, check_flag
+        );
     }
 }
-
-
-
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Movement {
@@ -412,12 +426,15 @@ impl From<(Index144, Index144)> for Movement {
     }
 }
 
-
 /// Pawn double move holder på feltet som blev sprunget over
 #[derive(Debug, Clone, PartialEq)]
-pub enum MoveInformation { None, PawnDoubleMove(Index144), EnPassant, CastleKingSide, CastleQueenSide }
-
-
+pub enum MoveInformation {
+    None,
+    PawnDoubleMove(Index144),
+    EnPassant,
+    CastleKingSide,
+    CastleQueenSide,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProposeMove {
@@ -425,7 +442,6 @@ pub struct ProposeMove {
     pub requires: Vec<MoveRequirement>,
     pub information: MoveInformation,
 }
-
 
 impl ProposeMove {
     pub fn into_move(&self) -> Move {
@@ -440,15 +456,22 @@ impl ProposeMove {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub enum Promotion {
+    Rook,
+    Bishop,
+    Queen,
+    Knight,
+}
 
 #[derive(Debug, Clone, PartialEq, Copy)]
-pub enum Promotion { Rook, Bishop, Queen, Knight }
-
-
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub enum MoveRequirement { HasToAttack, Pacifist, FirstTime, IsFree(Index144), EnPassant }
-
-
+pub enum MoveRequirement {
+    HasToAttack,
+    Pacifist,
+    FirstTime,
+    IsFree(Index144),
+    EnPassant,
+}
 
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Piece {
@@ -458,17 +481,29 @@ pub struct Piece {
 }
 
 #[derive(Clone, Copy, PartialEq, Default, Debug)]
-pub enum PieceType { #[default] Pawn, Rook, Knight, Bishop, Queen, King }
+pub enum PieceType {
+    #[default]
+    Pawn,
+    Rook,
+    Knight,
+    Bishop,
+    Queen,
+    King,
+}
 
 #[derive(Clone, Copy, PartialEq, Default, Debug)]
-pub enum ChessColor { #[default] White, Black }
-
+pub enum ChessColor {
+    #[default]
+    White,
+    Black,
+}
 
 impl ChessColor {
     pub fn to_str_fen_format(&self) -> String {
         match self {
             ChessColor::White => "w",
             ChessColor::Black => "b",
-        }.to_string()
+        }
+        .to_string()
     }
 }

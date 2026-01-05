@@ -1,0 +1,20 @@
+[package]
+name = "fast_serv"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# smol = "2.0" # async runtime
+tungstenite = "0.28.0" # ws server
+mysql = "26.0.1" # sql
+pwhash = "1.0.0"
+rand = "0.9.2"
+jsonic = "0.2.14"
+uuid = { version = "1.18.1", features = ["v4"] }
+log = "0.4.29"
+env_logger = "0.11.8"
+chrono = { version = "0.4.42", features = ["alloc", "std", "now", "clock"] }
+chess_machine_lib = { path = "../chess_machine_lib", features = ["time"] }
+
+[toolchain]
+channel = "nightly"
