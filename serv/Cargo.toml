@@ -1,0 +1,30 @@
+[package]
+name = "serv"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = "4.11.0"
+actix-ws = "0.3.0"
+# axum = "0.8.6" # http & websocket
+pwhash = "1.0.0"
+rand = "0.9.2"
+serde = "1.0.228"
+serde_json = "1.0.145"
+smol = "2.0.2" # async hjælp
+
+async-native-tls = "0.5"
+async-tungstenite = { version = "0.31", features = ["async-native-tls"] }
+
+futures = "0.3"
+futures-util = "0.3.31" # hjælp til futures
+sqlx = { version = "0.8.6", features = [ "runtime-tokio", "tls-native-tls", "mysql", "chrono", "macros", "migrate", "derive" ] }
+envy = "0.4.2" # env hjælp - gider det ikke, men sqlx nægter uden!
+chrono = "0.4.42" # sqlx har brug for den
+
+# dependencies jeg nok ikke har brug for
+thiserror = "2.0.17"
+anyhow = "1.0.100"
+
+[toolchain]
+channel = "nightly"
