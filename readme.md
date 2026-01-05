@@ -13,43 +13,59 @@ Fuck JS haha
 
 ```
 Skak projekt
-│   README.md
+
+.
+├─── bevy_skak
+│      Et projekt skrevet i Rust og Bevy.
+│      Pt. gør det ikke rigtig noget ud over at vise et skakbræt, hvor man kan rykke rundt på brikkerne.
+│      Tasten 'X' vender brættet
+│      💿 cargo run
 │
-└─── engine
-│      Benjamins første skak engine
-│      Bruges af server, så spillere kan spille i mod den.
-│      💿 make optimized
 │
-└─── chess_machine_lib
+├─── chess_machine_lib
 │      Et program skrevet i Rust, som holder styr på skakspillet.
 │      Hvis den bliver kompileret med featuren 'time', kan den også holde styr på tiden.
 │      Bliver brugt af: bevy_skak, server og front
 │      💿 wasm-pack build --target web
 │      ‼️ Må IKKE kompileres med featuren time, hvis det skal fungere i webbrowseren
 │   
-└─── server
+│
+├── engine
+│      Benjamins første skak engine
+│      Bruges af server, så spillere kan spille imod den.
+│      💿 make optimized
+│
+│
+├── fast_serv
 │      Serveren eller backenden, som binder det hele sammen.
 │      Skrevet i Rust med multithreading-hjælp fra frameworket Actix.
 │      Kører på port: 4000
 │      💿 cargo run
 │      ‼️ Kan IKKE køre uden at chess_machine_lib, stockfish og engine er kompileret.
+│
 │   
-└─── front
-│      Selve hjemmesiden - skrevet i Svelte og TailwindCSS
-│      Kører på port 3000
-│      💿 npm run dev
-│      
-└─── stockfish
-│      Kræves af server, så spillere kan spille i mod den.
+├── nginx.conf
+│      Konfigurations fil til nginx.
+│
+│
+├── README.md
+│
+├── sisyphus32
+│      Benjamins anden skak engine! 🤯
+│      Bruges af server, så spillere kan spille imod den.
+│      💿 make optimized
+│
+│
+├── stockfish
+│      Kræves af server, så spillere kan spille imod den.
 │      💿 cd src && make -j build eller make -j profile-build (hvis man selv kompilerer koden)
 │      ‼️ Er faktisk ikke med i github repo, så man skal selv hente det fra https://stockfishchess.org
+│
 │      
-└─── bevy_skak
-│      Et projekt skrevet i Rust og Bevy.
-│      Pt. gør det ikke rigtig noget ud over at vise et skakbræt, hvor man kan rykke rundt på brikkerne.
-│      Tasten 'X' vender brættet
-│      💿 cargo run
-
+└── web
+       Selve hjemmesiden - skrevet i Svelte og TailwindCSS
+       Kører på port 3000
+       💿 npm run dev
 ```
 
 
