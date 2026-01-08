@@ -1,5 +1,8 @@
 use log::LevelFilter;
-use mysql::{Params, Pool, params, prelude::Queryable};
+use mysql::{
+    Params, Pool, params,
+    prelude::{Queryable, TextQuery},
+};
 use prelude::*;
 use std::{error::Error, io::Write, net::TcpListener};
 
@@ -11,6 +14,8 @@ mod parsing;
 mod prelude;
 mod server_thread;
 mod types;
+
+const DB_NAME: &'static str = "ChessDB";
 
 pub fn new_user(username: &str, psw: &str, pool: &Pool) -> Result<(), Box<dyn Error>> {
     let mut conn = pool.get_conn()?;
@@ -35,90 +40,15 @@ pub fn new_user(username: &str, psw: &str, pool: &Pool) -> Result<(), Box<dyn Er
 }
 
 pub fn check_if_db_exists() -> Option<Pool> {
-    let url = "mysql://root@localhost:3306/ChessDB";
-    match Pool::new(url) {
+    let url = String::from("mysql://root@localhost:3306/") + DB_NAME;
+    match Pool::new(url.as_str()) {
         Ok(p) => Some(p),
         Err(_) => None,
     }
 }
 
-pub fn start_database() -> Pool {
-    let pool = match check_if_db_exists() {
-        Some(p) => p,
-        None => {
-            info!("Running database init protocol");
-            let url = "mysql://root@localhost:3306";
-            let pool = Pool::new(url).unwrap();
-            let mut conn = pool.get_conn().unwrap();
-
-            let mut sql_files = std::fs::read_dir("sql")
-                .expect("sql folder is missing")
-                .filter(|v| v.is_ok())
-                .collect::<Vec<_>>();
-
-            sql_files.sort_by_key(|v| {
-                let num = v
-                    .as_ref()
-                    .unwrap() // alt i sql_files burde være gyldigt, så vi burde kunne unwrap
-                    .file_name()
-                    .into_string()
-                    .unwrap() // igen, vi tager filnavnet, som er garanteret gyldigt og prøver at tage den som typen string - burde virke fint
-                    .split("_")
-                    .next()
-                    .expect("sql file not matching format! 'n_name.sql'") // nu er det ikke længere garanteret at det virker. Måske glemmer jeg formattet i fremtiden🤷‍♀️
-                    .parse::<usize>()
-                    .expect("sql file is supposed to start with an index nr!");
-
-                num
-            });
-
-            let mut err_files: Vec<String> = Vec::new();
-
-            let mut first = true;
-            for file in sql_files {
-                let file = file.as_ref().unwrap();
-                let file_name = file.file_name().into_string().unwrap();
-                let sql = std::fs::read_to_string(file.path()).unwrap();
-                let res = conn.exec_drop(&sql, Params::Empty);
-
-                if let Err(e) = res {
-                    err_files.push(format!("{file_name}: {e:?}"));
-                }
-
-                if first {
-                    first = false;
-                    let conn = conn.as_mut();
-                    match conn.select_db("ChessDB") {
-                        Ok(_) => {}
-                        Err(e) => panic!("{e:?}"),
-                    }
-                }
-            }
-
-            if err_files.is_empty() {
-                info!("Database initialized successfully");
-                pool
-            } else {
-                // drop db
-                let conn = conn.as_mut();
-                match conn.exec_drop("drop database ChessDB", Params::Empty) {
-                    Ok(_) => {}
-                    Err(e) => panic!("{e:?}"),
-                }
-                panic!(
-                    "\n🚨 {} error(s) occured! 🚨\n{:#?}",
-                    err_files.len(),
-                    err_files
-                );
-            }
-        }
-    };
-
-    pool
-}
-
 pub fn start_server() -> Result<(), Box<dyn std::error::Error>> {
-    let pool = start_database();
+    let pool = run_db_check();
     let server = TcpListener::bind("127.0.0.1:4000").unwrap();
     info!("Listening on ws://127.0.0.1:4000");
 
@@ -130,6 +60,121 @@ pub fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn read_index_file() -> isize {
+    let index_content = std::fs::read_to_string("sql/index.txt").unwrap_or_else(|_err| {
+        std::fs::write("sql/index.txt", "-1").expect("idk - burde virke :))");
+        info!("SQL index file was created with index: -1");
+        String::from("-1")
+    });
+    index_content.trim().parse::<isize>().unwrap()
+}
+
+pub fn load_sql_files() -> Vec<(String, String)> {
+    // load the index file
+    let last_index = read_index_file();
+
+    let sql_folder = std::fs::read_dir("sql").expect("sql folder is missing");
+
+    // files: Vec<name, sql_statement>
+    let mut files = Vec::new();
+
+    for entry in sql_folder {
+        let path = entry.unwrap().path();
+        if path.extension().unwrap() == "sql" {
+            let name = path.file_name().unwrap().to_str().unwrap().to_string();
+            let sql = std::fs::read_to_string(path).unwrap();
+
+            files.push((name, sql));
+        }
+    }
+
+    // sort file by index
+    files.sort_by_key(|v| {
+        v.0.split("_")
+            .next()
+            .expect("sql file not matching format! 'n_name.sql'") // nu er det ikke længere garanteret at det virker. Måske glemmer jeg formattet i fremtiden🤷‍♀️
+            .parse::<usize>()
+            .expect("sql file is supposed to start with an index nr!")
+    });
+
+    // filter alt fra, som er under eller lig med last_index
+    files.retain(|v| {
+        v.0.split("_")
+            .next()
+            .expect("sql file not matching format! 'n_name.sql'") // nu er det ikke længere garanteret at det virker. Måske glemmer jeg formattet i fremtiden🤷‍♀️
+            .parse::<isize>()
+            .expect("sql file is supposed to start with an index nr!")
+            > last_index
+    });
+
+    files
+}
+
+pub fn run_db_check() -> Pool {
+    // Forbinder til DB
+    let url = "mysql://root@localhost:3306";
+    let pool = Pool::new(url).unwrap();
+    let mut conn = pool.get_conn().unwrap();
+
+    let mut sql_files = load_sql_files();
+
+    // vi skal tjekke om databasen eksisterer
+    // og oprette, hvis det giver mening
+    if let None = check_if_db_exists() {
+        // fjerner index.txt og genindlæser sql filerne
+        let _ = std::fs::remove_file("sql/index.txt");
+        sql_files = load_sql_files();
+
+        info!("Running database init protocol");
+
+        // finder 0_xxx.sql file aka. den første
+        let create_db_statement = sql_files.first().expect("missing sql statement!");
+        let _ = conn.exec_drop(create_db_statement.1.clone(), Params::Empty);
+        let _ = conn.as_mut().select_db(DB_NAME);
+
+        // make an index file and save it
+        let _ = std::fs::write("sql/index.txt", "0");
+        info!("SQL index file was created!");
+
+        // fjern det første element fra sql_files
+        let _ = sql_files.remove(0);
+    } else {
+        let _ = conn.as_mut().select_db(DB_NAME);
+    }
+
+    // databasen eksisterer, så kan vi køre de resterende scripts
+    // når sql filerne bliver loadet bliver dem der allerede er kørt automatisk sorteret fra!
+
+    for (name, stmt) in &sql_files {
+        let status = match conn.exec_drop(stmt, Params::Empty) {
+            Err(e) => {
+                error!("{e:?}");
+                "👎"
+            }
+            Ok(_) => "👍",
+        };
+
+        info!("exec: {name} ... {status}");
+    }
+
+    // write the last value to index.txt
+    if sql_files.len() > 0 {
+        let length = sql_files
+            .last()
+            .unwrap()
+            .0
+            .split("_")
+            .next()
+            .expect("sql file not matching format! 'n_name.sql'") // nu er det ikke længere garanteret at det virker. Måske glemmer jeg formattet i fremtiden🤷‍♀️
+            .parse::<usize>()
+            .expect("sql file is supposed to start with an index nr!");
+
+        let _ = std::fs::write("sql/index.txt", length.to_string());
+    }
+
+    pool
 }
 
 pub fn init_logger(filter: LevelFilter) {

@@ -1,1 +1,1 @@
-create database if not exists ChessDB;
+create database ChessDB;
