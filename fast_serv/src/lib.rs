@@ -4,6 +4,7 @@ use mysql::{
     prelude::{Queryable, TextQuery},
 };
 use prelude::*;
+use rand::{Rng, distr::Alphanumeric};
 use std::{error::Error, io::Write, net::TcpListener};
 
 mod client_thread;
@@ -120,6 +121,8 @@ pub fn run_db_check() -> Pool {
 
     let mut sql_files = load_sql_files();
 
+    let mut first_run_after_db_creation = false;
+
     // vi skal tjekke om databasen eksisterer
     // og oprette, hvis det giver mening
     if let None = check_if_db_exists() {
@@ -128,6 +131,7 @@ pub fn run_db_check() -> Pool {
         sql_files = load_sql_files();
 
         info!("Running database init protocol");
+        first_run_after_db_creation = true;
 
         // finder 0_xxx.sql file aka. den første
         let create_db_statement = sql_files.first().expect("missing sql statement!");
@@ -174,7 +178,45 @@ pub fn run_db_check() -> Pool {
         let _ = std::fs::write("sql/index.txt", length.to_string());
     }
 
+    let url = String::from("mysql://root@localhost:3306/") + DB_NAME;
+    let pool = Pool::new(url.as_str()).unwrap();
+
+    if first_run_after_db_creation {
+        generate_admin_invite_code(&pool);
+    }
+
     pool
+}
+
+fn generate_admin_invite_code(pool: &Pool) {
+    let mut conn = pool.get_conn().unwrap();
+
+    let code: String = rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(64)
+        .map(char::from)
+        .collect();
+
+    let code_hash = pwhash::bcrypt::hash(&code).unwrap();
+
+    conn.exec_drop(
+        "insert into User (username, rating) values ('__server__', 0);",
+        Params::Empty,
+    )
+    .expect("Kunne ikke oprette server som en bruger");
+
+    // conn.exec_drop("inse", params)
+    let res = conn.exec_drop(
+        "insert into InviteCode (privilege, code, created_by) values ('admin', :code, '__server__');",
+        params! {
+            "code" => code_hash,
+        },
+    );
+
+    match res {
+        Ok(_) => info!("Invite code generated: >>{code}<<"),
+        Err(err) => error!("Invite code gen failed! {err:?}"),
+    }
 }
 
 pub fn init_logger(filter: LevelFilter) {
