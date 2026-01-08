@@ -1,5 +1,5 @@
 use log::LevelFilter;
-use mysql::{Pool, params, prelude::Queryable};
+use mysql::{Params, Pool, params, prelude::Queryable};
 use prelude::*;
 use std::{error::Error, io::Write, net::TcpListener};
 
@@ -34,10 +34,91 @@ pub fn new_user(username: &str, psw: &str, pool: &Pool) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-pub fn start_server() -> Result<(), Box<dyn std::error::Error>> {
+pub fn check_if_db_exists() -> Option<Pool> {
     let url = "mysql://root@localhost:3306/ChessDB";
-    let pool = Pool::new(url)?;
+    match Pool::new(url) {
+        Ok(p) => Some(p),
+        Err(_) => None,
+    }
+}
 
+pub fn start_database() -> Pool {
+    let pool = match check_if_db_exists() {
+        Some(p) => p,
+        None => {
+            info!("Running database init protocol");
+            let url = "mysql://root@localhost:3306";
+            let pool = Pool::new(url).unwrap();
+            let mut conn = pool.get_conn().unwrap();
+
+            let mut sql_files = std::fs::read_dir("sql")
+                .expect("sql folder is missing")
+                .filter(|v| v.is_ok())
+                .collect::<Vec<_>>();
+
+            sql_files.sort_by_key(|v| {
+                let num = v
+                    .as_ref()
+                    .unwrap() // alt i sql_files burde være gyldigt, så vi burde kunne unwrap
+                    .file_name()
+                    .into_string()
+                    .unwrap() // igen, vi tager filnavnet, som er garanteret gyldigt og prøver at tage den som typen string - burde virke fint
+                    .split("_")
+                    .next()
+                    .expect("sql file not matching format! 'n_name.sql'") // nu er det ikke længere garanteret at det virker. Måske glemmer jeg formattet i fremtiden🤷‍♀️
+                    .parse::<usize>()
+                    .expect("sql file is supposed to start with an index nr!");
+
+                num
+            });
+
+            let mut err_files: Vec<String> = Vec::new();
+
+            let mut first = true;
+            for file in sql_files {
+                let file = file.as_ref().unwrap();
+                let file_name = file.file_name().into_string().unwrap();
+                let sql = std::fs::read_to_string(file.path()).unwrap();
+                let res = conn.exec_drop(&sql, Params::Empty);
+
+                if let Err(e) = res {
+                    err_files.push(format!("{file_name}: {e:?}"));
+                }
+
+                if first {
+                    first = false;
+                    let conn = conn.as_mut();
+                    match conn.select_db("ChessDB") {
+                        Ok(_) => {}
+                        Err(e) => panic!("{e:?}"),
+                    }
+                }
+            }
+
+            if err_files.is_empty() {
+                info!("Database initialized successfully");
+                pool
+            } else {
+                // drop db
+                let conn = conn.as_mut();
+                match conn.exec_drop("drop database ChessDB", Params::Empty) {
+                    Ok(_) => {}
+                    Err(e) => panic!("{e:?}"),
+                }
+                panic!(
+                    "\n🚨 {} error(s) occured! 🚨\n{:#?}",
+                    err_files.len(),
+                    err_files
+                );
+            }
+        }
+    };
+
+    pool
+}
+
+pub fn start_server() -> Result<(), Box<dyn std::error::Error>> {
+    let pool = start_database();
     let server = TcpListener::bind("127.0.0.1:4000").unwrap();
     info!("Listening on ws://127.0.0.1:4000");
 
